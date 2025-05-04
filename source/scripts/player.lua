@@ -61,12 +61,24 @@ function player.update()
             end
         elseif playdate.buttonJustPressed(playdate.kButtonA) then
             if heldTrash then
-                if store.PlaceTrash(heldTrash, rotation) then
-                    print("Placed trash")
+                local placed, swappedItem = store.PlaceTrash(heldTrash, rotation)
+                if placed then
                     placeSFX:play(1)
-                    heldTrash = nil
+                    heldTrash:setZIndex(1)
+                    heldTrash = swappedItem
+                    if heldTrash then
+                        heldTrash:setZIndex(2)
+                    end
+                    PutTrashInPaw()
                 else
                     errorSFX:play(1)
+                end
+            else 
+                local pickup = store.PickupTrash()
+                if pickup then
+                    heldTrash = pickup
+                    heldTrash:setZIndex(2)
+                    PutTrashInPaw()
                 end
             end
         end
@@ -75,8 +87,10 @@ function player.update()
     if heldTrash then
         if playdate.buttonJustPressed(playdate.kButtonB) then
             rotation += 1
-            heldTrash:getSprite():setRotation(90*(rotation-1))
+            heldTrash:rotateClockwise()
             if rotation > 4 then rotation = 1 end
+
+            PutTrashInPaw()
         end
     end
 
@@ -86,6 +100,11 @@ end
 function MovePaw(x,y)
     moveSFX:play(1)
     pawSpr:moveTo(x,y)
+    PutTrashInPaw()
+end
+
+function PutTrashInPaw()
+    local x, y = pawSpr:getPosition()
     if heldTrash then
         heldTrash:moveTo(x,y+28)
     end

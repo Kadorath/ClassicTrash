@@ -10,22 +10,31 @@ import "scripts/store"
 import "scripts/trash"
 
 local gfx <const> = playdate.graphics
-
-local test = Trash("testtrash", "trash1")
+local trashdata <const> = assert(json.decodeFile("data/trashdata.json"))
+local trashIDs = {}
+for id,_ in pairs(trashdata) do
+    table.insert(trashIDs, id)
+end
 
 function playdate.update()
     gfx.sprite.update()
     player.update()
     conveyor.update()
     store.update()
+    incinerator.update()
 
     playdate.timer.updateTimers()
 end
 
+local ct = 1
 function Dump()
-    local newTrash = Trash("testtrash", "ibeam")
+    local rTrash = trashdata[trashIDs[ct]]
+    local name = trashIDs[ct]
+    ct += 1
+    if ct > #trashIDs then ct = 1 end
+    local newTrash = Trash(name, rTrash)
     conveyor.AddToBelt(newTrash)
-    playdate.timer.performAfterDelay(1000, Dump)
+    playdate.timer.performAfterDelay(3000, Dump)
 end
 
 playdate.timer.performAfterDelay(1000, Dump)

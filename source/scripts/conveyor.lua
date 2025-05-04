@@ -1,3 +1,5 @@
+import "scripts/incinerator"
+
 conveyor = {}
 
 local gfx <const> = playdate.graphics
@@ -40,8 +42,10 @@ function conveyor.AddToBelt(trash)
     trash:add()
     trash:moveTo(-100,-100)
     trash:setZIndex(0)
+    trash:setScale(0.5)
     if oldItem ~= -1 then
-        oldItem:remove()
+        print(oldItem)
+        incinerator.AddToIncinerator(oldItem)
     end
 
     needsDisplay = true
@@ -51,6 +55,8 @@ function conveyor.TakeFromBelt()
     local selectedTrash = nil
     if belt[selection] ~= -1 then
         selectedTrash = belt[selection]
+        selectedTrash:setScale(1)
+        selectedTrash:setCenter(selectedTrash.center[1], selectedTrash.center[2])
         belt[selection] = -1
         needsDisplay = true
     end
@@ -63,14 +69,14 @@ function conveyor.UpdateSelection(d)
     selection = math.max(math.min(selection, capacity), 1)
     needsDisplay = true
 
-    return beltX, beltY + (selection-1)*32 + 4
+    return beltX, beltY + (selection-1)*32 + 18
 end
 
 function conveyor.SetSelection(s)
     selection = math.max(math.min(s, capacity), 1)
     needsDisplay = true
 
-    return beltX, beltY + (selection-1)*32 + 4
+    return beltX, beltY + (selection-1)*32 + 18
 end
 
 function conveyor.GetSelection()

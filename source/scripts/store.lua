@@ -18,7 +18,11 @@ function storeGrid:drawCell(section, row, column, selected, x, y, width, height)
     gfx.setColor(gfx.kColorBlack)
     if selected then gfx.setLineWidth(3)
     else gfx.setLineWidth(1) end
-    gfx.drawRect(x,y,width,height)
+    if itemMap[(row-1)*7 + column] == 0 then
+        gfx.drawRect(x,y,width,height)
+    else
+        gfx.fillRect(x,y,width,height)
+    end
 end
 
 for i=1,storeGrid:getNumberOfColumns(),1 do
@@ -39,6 +43,7 @@ bgSpr:moveTo(storeX-12, storeY-12)
 bgSpr:add()
 
 function store.update()
+    --storeGrid:drawInRect(storeX,storeY,248,152)
 end
 
 function store.UpdatePosition(dX,dY)
@@ -47,7 +52,6 @@ function store.UpdatePosition(dX,dY)
     storeGrid:setSelection(s,math.min(math.max(r+dY,1),4),math.min(math.max(c+dX, 0), 7))
     s,r,c = storeGrid:getSelection()
     local x,y = storeGrid:getCellBounds(s,r,c)
-    print(c)
     if c <= 0 then
         return x+storeX+16,y+storeY-12, true
     else
@@ -70,41 +74,32 @@ function store.PlaceTrash(trash, rot)
     rot = rot or 1
     local w = storeGrid:getNumberOfColumns()
     local h = storeGrid:getNumberOfRowsInSection(1)
-    local cX = trash.center[1]
-    local cY = trash.center[2]
+    local cX = 1
+    local cY = 1
     local _,r,c = storeGrid:getSelection()
     r -= 1
-    
-    local toChange = {}
-    for i,row in ipairs(trash.shape) do
-        for j,col in ipairs(row) do
-            if col == 1 then
-                local newToChangeInd = -1
-                local x = -1
-                local y = -1
-                if rot == 1 then
-                    x = (c+j-1-cX)
-                    y = (r+i-1-cY)
-                elseif rot == 2 then
-                    x = (c-i+1+cX)
-                    y = (r+j-1-cY)
-                elseif rot == 3 then
-                    x = (c-j+1+cX)
-                    y = (r-i+1+cY)
-                elseif rot == 4 then
-                    x = (c+i-1-cX)
-                    y = (r-j+1+cY)
-                end
-                print(x,y)
-                if y >= h or y < 0 or x > w or x < 1 then return false end 
-                newToChangeInd = y*w + x
-                if itemMap[newToChangeInd] > 0 then return false end
 
+    local itemAlreadyThere = nil
+    local toChange = {}
+    for i=1, #trash.shape, 1 do
+        for j=1, #trash.shape[i], 1 do
+            if trash.shape[i][j] == 1 then
+                local x = c+j-1-cX
+                local y = r+i-1-cY
+                if y >= h or y < 0 or x > w or x < 1 then return false end 
+                local newToChangeInd = y*w + x
+                print(newToChangeInd, itemMap[newToChangeInd])
+                if itemMap[newToChangeInd] > 0 then
+                    if not itemAlreadyThere then
+                        itemAlreadyThere = itemMap[newToChangeInd]
+                    elseif itemMap[newToChangeInd] ~= itemAlreadyThere then
+                        return false, nil
+                    end
+                end
                 table.insert(toChange, newToChangeInd)
             end
         end
     end
-
     for _,v in ipairs(toChange) do
         itemMap[v] = trash.id
     end
@@ -117,5 +112,38 @@ function store.PlaceTrash(trash, rot)
     end
     print(debugStr)
 
-    return true
+    local itemToSwap = nil
+    if itemAlreadyThere then
+        for _,trash in ipairs(trashInStore) do
+            if trash.id == itemAlreadyThere then
+                itemToSwap = trash
+            end
+        end
+        for i=1, #itemMap, 1 do
+            if itemMap[i] == itemAlreadyThere then
+                itemMap[i] = 0
+            end
+        end
+    end
+    return true, itemToSwap
+end
+
+function store.PickupTrash()
+    local _,y,x = storeGrid:getSelection()
+    local w = storeGrid:getNumberOfColumns()
+    local queryID = itemMap[(y-1)*w + x]
+    if queryID > 0 then
+        for _,trash in ipairs(trashInStore) do
+            if trash.id == queryID then
+                for i=1, #itemMap, 1 do
+                    if itemMap[i] == trash.id then
+                        itemMap[i] = 0
+                    end
+                end
+                return trash
+            end
+        end
+    end
+
+    return nil
 end
