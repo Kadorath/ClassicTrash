@@ -6,6 +6,12 @@ player = {}
 
 local gfx <const> = playdate.graphics
 
+local lastDPadInput        = 0
+local btnHold          = 0
+local btnHoldThreshold = 20
+local btnHoldRate      = 2
+local btnHoldRateCt    = btnHoldRate
+
 local moveSFX  = playdate.sound.sampleplayer.new("audio/UIMove")
 local errorSFX = playdate.sound.sampleplayer.new("audio/Error")
 local placeSFX = playdate.sound.sampleplayer.new("audio/UISelect")
@@ -22,6 +28,26 @@ local rotation  = 1
 local section = 1
 
 function player.update()
+    local curDPadInput = playdate.getButtonState() & (playdate.kButtonRight|playdate.kButtonDown|playdate.kButtonLeft|playdate.kButtonUp)
+    if curDPadInput > 0 then
+        btnHold += 1
+    else
+        btnHold = 0
+        btnHoldRateCt = btnHoldRate
+    end
+    if btnHold >= btnHoldThreshold then
+        btnHoldRateCt -= 1
+        if btnHoldRateCt <= -1 then
+            btnHoldRateCt = btnHoldRate
+        end
+    end
+
+    if lastDPadInput ~= curDPadInput then
+        btnHold = btnHoldThreshold // 3
+        btnHoldRateCt = btnHoldRate
+    end
+    lastDPadInput = curDPadInput
+
     if section == 1 then
         if playdate.buttonJustPressed(playdate.kButtonUp) then
             local x,y = conveyor.UpdateSelection(-1)
@@ -42,16 +68,20 @@ function player.update()
             end
         end
     elseif section == 2 then
-        if playdate.buttonJustPressed(playdate.kButtonUp) then
+        if playdate.buttonJustPressed(playdate.kButtonUp) or 
+          (playdate.buttonIsPressed(playdate.kButtonUp) and btnHoldRateCt == 0) then
             local x,y = store.UpdatePosition(0,-1)
             MovePaw(x,y)
-        elseif playdate.buttonJustPressed(playdate.kButtonDown) then
+        elseif playdate.buttonJustPressed(playdate.kButtonDown) or 
+          (playdate.buttonIsPressed(playdate.kButtonDown) and btnHoldRateCt == 0) then
             local x,y = store.UpdatePosition(0,1)
             MovePaw(x,y)
-        elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+        elseif playdate.buttonJustPressed(playdate.kButtonRight) or 
+          (playdate.buttonIsPressed(playdate.kButtonRight) and btnHoldRateCt == 0) then
             local x,y = store.UpdatePosition(1,0)
             MovePaw(x,y)
-        elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
+        elseif playdate.buttonJustPressed(playdate.kButtonLeft) or 
+          (playdate.buttonIsPressed(playdate.kButtonLeft) and btnHoldRateCt == 0) then
             local x,y,toConveyor = store.UpdatePosition(-1,0)
             if not toConveyor then
                 MovePaw(x,y)

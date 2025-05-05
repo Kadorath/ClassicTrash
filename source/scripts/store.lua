@@ -11,7 +11,7 @@ local gfx <const> = playdate.graphics
 local itemMap = {}
 local trashInStore = {}
 
-local storeX, storeY = 88,98
+local storeX, storeY = 66,84
 local storeGrid = playdate.ui.gridview.new(32,32)
 storeGrid:setNumberOfColumns(8)
 storeGrid:setNumberOfRowsInSection(1,4)
@@ -35,15 +35,15 @@ for i=1,storeGrid:getNumberOfColumns(),1 do
 end
 
 local bgNineSlice = gfx.nineSlice.new("images/storebg", 16, 16, 32, 32)
-local bgImg = gfx.image.new(248,152)
+local bgImg = gfx.image.new(276,148)
 gfx.pushContext(bgImg)
-bgNineSlice:drawInRect(0,0,248,152)
+bgNineSlice:drawInRect(0,0,276,148)
 gfx.popContext()
 local bgSpr = gfx.sprite.new(bgImg)
 bgSpr:setCenter(0,0)
 bgSpr:setZIndex(1)
 bgSpr:moveTo(storeX-12, storeY-12)
-bgSpr:add()
+--bgSpr:add()
 
 -- Store grid functions
 function store.UpdatePosition(dX,dY)

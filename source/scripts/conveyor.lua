@@ -8,31 +8,41 @@ local depot = {}
 
 local speed = 60
 local capacity = 4
+local onBelt = 0
 local belt = {}
 for i=1, capacity, 1 do
     table.insert(belt, -1)
 end
 
+local toIncineratorItem = nil
+
 local selection = 1
 
-local beltX = 32
+local beltX = 26
 local beltY = 72
 
 local needsDisplay = true
 
 local elapsedFrames = 0
 function conveyor.update()
-    if needsDisplay then
-        for i,trash in ipairs(belt) do
-            if trash ~= -1 then
-                trash:moveTo(beltX, beltY + i*32)
+    print(onBelt)
+    for i,trash in ipairs(belt) do
+        if trash ~= -1 then
+            trash:UpdateBeltPosition()
+        end
+    end
+    if toIncineratorItem then
+        if toIncineratorItem:UpdateBeltPosition() then
+            if not incinerator.IsFull() then
+                incinerator.AddToIncinerator(toIncineratorItem)
+                toIncineratorItem = nil
             end
         end
-        needsDisplay = false
     end
 
     elapsedFrames += 1
-    if #depot > 0 and elapsedFrames >= speed then
+    if #depot > 0 and elapsedFrames >= speed and 
+        (toIncineratorItem == nil or onBelt < capacity) then
         conveyor.AddToBelt(table.remove(depot))
         elapsedFrames = 0
     end
@@ -44,8 +54,14 @@ end
 
 function conveyor.AddToBelt(trash, idx)
     idx = idx or 1
+
+    trash:moveTo(beltX,beltY)
+    trash:setZIndex(0)
+    trash:setScale(0.5)
+
     local oldItem = trash
     for i,v in ipairs(belt) do
+        oldItem:SetBeltPosition(beltX, beltY + i*32)
         belt[i] = oldItem
         oldItem = v
         if oldItem == -1 then
@@ -53,15 +69,14 @@ function conveyor.AddToBelt(trash, idx)
         end
     end
 
-    belt[1] = trash
     trash:add()
-    trash:moveTo(-100,-100)
-    trash:setZIndex(0)
-    trash:setScale(0.5)
     if oldItem ~= -1 then
-        incinerator.AddToIncinerator(oldItem)
+        oldItem:SetBeltPosition(beltX, 262, 400)
+        toIncineratorItem = oldItem
+        onBelt -= 1
     end
 
+    onBelt += 1
     needsDisplay = true
 end
 
@@ -75,6 +90,7 @@ function conveyor.TakeFromBelt()
         needsDisplay = true
     end
 
+    onBelt -= 1
     return selectedTrash
 end
 

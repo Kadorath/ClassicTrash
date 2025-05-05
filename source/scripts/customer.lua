@@ -11,5 +11,6 @@ function Customer:init(data)
     self.img = gfx.image.new("images/Customers/"..data["img"])
     self.sprite = gfx.sprite.new(self.img)
     self.request = data["wants"][math.random(#data["wants"])]
+    print(self.request)
     self.patience = data["patience"]
 end

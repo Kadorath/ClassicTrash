@@ -1,3 +1,4 @@
+import "CoreLibs/animator"
 import "CoreLibs/object"
 
 local gfx <const> = playdate.graphics
@@ -12,7 +13,8 @@ function Trash:init(name, data)
     nextTrashID += 1
     local newImg = gfx.image.new("images/Trash/"..data["img"])
     self.sprite = gfx.sprite.new(newImg)
-
+    self.sprite:setGroups({3})
+    
     self.shape = {}
     for _,r in ipairs(data["shape"]) do
         local newRow = {}
@@ -23,6 +25,10 @@ function Trash:init(name, data)
     end
     self.center = {data["center"][1], data["center"][2]}
 
+    -- Conveyor belt movement parameters
+    self.beltTargetX = 0
+    self.beltTargetY = 0
+    self.beltPosAnimator = nil
     -- Incinerator physics parameters
     self.velocity = {(math.random()-0.5)*0.25,0}
 end
@@ -44,6 +50,19 @@ end
 function Trash:moveBy(x,y)
     self.sprite:moveBy(x,y)
 end
+function Trash:SetBeltPosition(x,y,time)
+    time = time or 250
+    self.beltTargetX = x
+    self.beltTargetY = y
+    local curX, curY = self.sprite:getPosition()
+    local moveLine = playdate.geometry.lineSegment.new(curX,curY,x,y)
+    self.beltPosAnimator = gfx.animator.new(time, moveLine, playdate.easingFunctions.inOutCubic)
+end
+function Trash:UpdateBeltPosition()
+    self.sprite:moveTo(self.beltPosAnimator:currentValue())
+    return self.beltPosAnimator:ended()
+end
+
 function Trash:moveWithCollisions(x,y)
     return self.sprite:moveWithCollisions(x,y)
 end
@@ -109,12 +128,19 @@ end
 
 function Trash:setCollideRect(x,y,w,h)
     self.sprite:setCollideRect(x,y,w,h)
-    self.sprite.collisionResponse = gfx.sprite.kCollisionTypeFreeze
+    self.sprite:setCollidesWithGroups({1,2,3})
+    self.sprite.collisionResponse = function(other)
+        if other:getGroupMask() == 1 then
+            return gfx.sprite.kCollisionTypeSlide
+        else
+            return gfx.sprite.kCollisionTypeFreeze
+        end
+    end
 end
 
 function Trash:incineratorCollision(x, y, collisions, length)
     if length > 0 then
-        self.velocity[1] += (math.random()-0.5)
+        --self.velocity[1] += (math.random()-0.5)
         self.velocity[2] *= -0.25
     end
 end
