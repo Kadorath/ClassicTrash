@@ -5,7 +5,7 @@ local g <const> = .98
 trashBag = {}
 
 local incinX = 330
-local incinY = 68
+local incinY = 74
 local incinW = 60
 local incinH = 160
 
@@ -16,6 +16,8 @@ floorCol:moveTo(incinX, incinY+incinH)
 floorCol:setCollideRect(0,0,floorCol:getSize())
 floorCol:add()
 
+local burnProgress = 0
+
 function incinerator.AddToIncinerator(trash)
     table.insert(trashBag, trash)
     trash:moveTo(incinX + incinW/2, incinY-98)
@@ -23,7 +25,7 @@ function incinerator.AddToIncinerator(trash)
 end
 
 function incinerator.update()
-    gfx.drawRect(incinX, incinY, incinW, incinH)
+    --gfx.drawRect(incinX, incinY, incinW, incinH)
     for _,trash in ipairs(trashBag) do
         trash:updateVelocity(0,g)
         local x,y = trash:getPosition()
@@ -33,4 +35,12 @@ function incinerator.update()
     end
 
     local crankD = math.abs(playdate.getCrankChange())
+    burnProgress += crankD
+    if #trashBag > 0 and burnProgress >= 180 then
+        local burnedTrash = table.remove(trashBag, 1)
+        burnedTrash:remove()
+        burnProgress = 0
+    end
+
+    --gfx.drawText(burnProgress, incinX, incinY-24)
 end

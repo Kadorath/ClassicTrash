@@ -6,5 +6,10 @@ local nextTrashID = 1
 
 class("Customer").extends()
 
-function Customer:init(name, data)
+function Customer:init(data)
+    self.name = data["name"]
+    self.img = gfx.image.new("images/Customers/"..data["img"])
+    self.sprite = gfx.sprite.new(self.img)
+    self.request = data["wants"][math.random(#data["wants"])]
+    self.patience = data["patience"]
 end

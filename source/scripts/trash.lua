@@ -24,7 +24,7 @@ function Trash:init(name, data)
     self.center = {data["center"][1], data["center"][2]}
 
     -- Incinerator physics parameters
-    self.velocity = {0,0}
+    self.velocity = {(math.random()-0.5)*0.25,0}
 end
 
 function Trash:getSprite()
@@ -114,6 +114,7 @@ end
 
 function Trash:incineratorCollision(x, y, collisions, length)
     if length > 0 then
+        self.velocity[1] += (math.random()-0.5)
         self.velocity[2] *= -0.25
     end
 end

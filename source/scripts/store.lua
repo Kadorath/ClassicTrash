@@ -1,16 +1,19 @@
 import "CoreLibs/ui"
 import "CoreLibs/nineslice"
 
+import "scripts/cQueue"
+
 store = {}
 
 local gfx <const> = playdate.graphics
 
+-- Store grid and item map
 local itemMap = {}
 local trashInStore = {}
 
-local storeX, storeY = 88,84
+local storeX, storeY = 88,98
 local storeGrid = playdate.ui.gridview.new(32,32)
-storeGrid:setNumberOfColumns(7)
+storeGrid:setNumberOfColumns(8)
 storeGrid:setNumberOfRowsInSection(1,4)
 storeGrid:setSelection(0,0,0)
 
@@ -18,7 +21,7 @@ function storeGrid:drawCell(section, row, column, selected, x, y, width, height)
     gfx.setColor(gfx.kColorBlack)
     if selected then gfx.setLineWidth(3)
     else gfx.setLineWidth(1) end
-    if itemMap[(row-1)*7 + column] == 0 then
+    if itemMap[(row-1)*8 + column] == 0 then
         gfx.drawRect(x,y,width,height)
     else
         gfx.fillRect(x,y,width,height)
@@ -42,14 +45,11 @@ bgSpr:setZIndex(1)
 bgSpr:moveTo(storeX-12, storeY-12)
 bgSpr:add()
 
-function store.update()
-    --storeGrid:drawInRect(storeX,storeY,248,152)
-end
-
+-- Store grid functions
 function store.UpdatePosition(dX,dY)
     storeGrid.needsDisplay = true
     local s,r,c = storeGrid:getSelection()
-    storeGrid:setSelection(s,math.min(math.max(r+dY,1),4),math.min(math.max(c+dX, 0), 7))
+    storeGrid:setSelection(s,math.min(math.max(r+dY,1),4),math.min(math.max(c+dX, 0), 8))
     s,r,c = storeGrid:getSelection()
     local x,y = storeGrid:getCellBounds(s,r,c)
     if c <= 0 then
@@ -105,23 +105,20 @@ function store.PlaceTrash(trash, rot)
     end
     table.insert(trashInStore, trash)
 
-    local debugStr = ""
-    for i=1,#itemMap,1 do
-        debugStr = debugStr..itemMap[i].." "
-        if i%7 == 0 then debugStr = debugStr.."\n" end
-    end
-    print(debugStr)
+    -- local debugStr = ""
+    -- for i=1,#itemMap,1 do
+    --     debugStr = debugStr..itemMap[i].." "
+    --     if i%8 == 0 then debugStr = debugStr.."\n" end
+    -- end
+    -- print(debugStr)
 
     local itemToSwap = nil
     if itemAlreadyThere then
-        for _,trash in ipairs(trashInStore) do
+        for i,trash in ipairs(trashInStore) do
             if trash.id == itemAlreadyThere then
                 itemToSwap = trash
-            end
-        end
-        for i=1, #itemMap, 1 do
-            if itemMap[i] == itemAlreadyThere then
-                itemMap[i] = 0
+                store.RemoveTrashFromStore(itemAlreadyThere,i)
+                break
             end
         end
     end
@@ -133,17 +130,37 @@ function store.PickupTrash()
     local w = storeGrid:getNumberOfColumns()
     local queryID = itemMap[(y-1)*w + x]
     if queryID > 0 then
-        for _,trash in ipairs(trashInStore) do
+        for i,trash in ipairs(trashInStore) do
             if trash.id == queryID then
-                for i=1, #itemMap, 1 do
-                    if itemMap[i] == trash.id then
-                        itemMap[i] = 0
-                    end
-                end
+                store.RemoveTrashFromStore(trash.id, i)
                 return trash
             end
         end
     end
 
     return nil
+end
+
+function store.RemoveTrashFromStore(id, idx)
+    for i=1, #itemMap, 1 do
+        if itemMap[i] == id then
+            itemMap[i] = 0
+        end
+    end
+    
+    table.remove(trashInStore, idx)
+
+    local debugStr = ""
+    for i=1,#itemMap,1 do
+        debugStr = debugStr..itemMap[i].." "
+        if i%8 == 0 then debugStr = debugStr.."\n" end
+    end
+    print(debugStr)
+
+    return true
+end
+
+-- Customer functions
+function store.update()
+    cQueue.update(trashInStore)
 end

@@ -7,13 +7,17 @@ import "CoreLibs/crank"
 import "scripts/player"
 import "scripts/conveyor"
 import "scripts/store"
-import "scripts/trash"
+
+import "scripts/thebus"
+import "scripts/thetruck"
 
 local gfx <const> = playdate.graphics
-local trashdata <const> = assert(json.decodeFile("data/trashdata.json"))
-local trashIDs = {}
-for id,_ in pairs(trashdata) do
-    table.insert(trashIDs, id)
+
+local customerQueue = {}
+
+function GameStart()
+    truck.Init()
+    bus.Init()
 end
 
 function playdate.update()
@@ -26,15 +30,10 @@ function playdate.update()
     playdate.timer.updateTimers()
 end
 
-local ct = 1
-function Dump()
-    local rTrash = trashdata[trashIDs[ct]]
-    local name = trashIDs[ct]
-    ct += 1
-    if ct > #trashIDs then ct = 1 end
-    local newTrash = Trash(name, rTrash)
-    conveyor.AddToBelt(newTrash)
-    playdate.timer.performAfterDelay(3000, Dump)
-end
+GameStart()
 
-playdate.timer.performAfterDelay(1000, Dump)
+local testBG = gfx.sprite.new(gfx.image.new("images/TrialBG1"))
+testBG:setCenter(0,0)
+testBG:moveTo(0,0)
+testBG:setZIndex(-1)
+-- testBG:add()

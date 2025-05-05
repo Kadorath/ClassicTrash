@@ -4,6 +4,9 @@ conveyor = {}
 
 local gfx <const> = playdate.graphics
 
+local depot = {}
+
+local speed = 60
 local capacity = 4
 local belt = {}
 for i=1, capacity, 1 do
@@ -13,10 +16,11 @@ end
 local selection = 1
 
 local beltX = 32
-local beltY = 68
+local beltY = 72
 
 local needsDisplay = true
 
+local elapsedFrames = 0
 function conveyor.update()
     if needsDisplay then
         for i,trash in ipairs(belt) do
@@ -26,9 +30,20 @@ function conveyor.update()
         end
         needsDisplay = false
     end
+
+    elapsedFrames += 1
+    if #depot > 0 and elapsedFrames >= speed then
+        conveyor.AddToBelt(table.remove(depot))
+        elapsedFrames = 0
+    end
 end
 
-function conveyor.AddToBelt(trash)
+function conveyor.AddToDepot(trash)
+    table.insert(depot, 1, trash)
+end
+
+function conveyor.AddToBelt(trash, idx)
+    idx = idx or 1
     local oldItem = trash
     for i,v in ipairs(belt) do
         belt[i] = oldItem
@@ -44,7 +59,6 @@ function conveyor.AddToBelt(trash)
     trash:setZIndex(0)
     trash:setScale(0.5)
     if oldItem ~= -1 then
-        print(oldItem)
         incinerator.AddToIncinerator(oldItem)
     end
 

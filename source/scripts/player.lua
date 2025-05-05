@@ -1,5 +1,7 @@
 import "scripts/conveyor"
 import "scripts/store"
+import "scripts/cQueue"
+
 player = {}
 
 local gfx <const> = playdate.graphics
@@ -94,7 +96,7 @@ function player.update()
         end
     end
 
-    gfx.drawText(rotation, 32,32)
+    gfx.drawText(cQueue.GetCustomerCount(), 32,32)
 end
 
 function MovePaw(x,y)
