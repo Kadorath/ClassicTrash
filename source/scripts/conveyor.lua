@@ -19,13 +19,12 @@ local toIncineratorItem = nil
 local selection = 1
 
 local beltX = 26
-local beltY = 72
+local beltY = 56
 
 local needsDisplay = true
 
 local elapsedFrames = 0
 function conveyor.update()
-    print(onBelt)
     for i,trash in ipairs(belt) do
         if trash ~= -1 then
             trash:UpdateBeltPosition()
@@ -55,13 +54,13 @@ end
 function conveyor.AddToBelt(trash, idx)
     idx = idx or 1
 
-    trash:moveTo(beltX,beltY)
-    trash:setZIndex(0)
+    trash:moveTo(beltX,0)
+    trash:setZIndex(2)
     trash:setScale(0.5)
 
     local oldItem = trash
     for i,v in ipairs(belt) do
-        oldItem:SetBeltPosition(beltX, beltY + i*32)
+        oldItem:SetBeltPosition(beltX, beltY + i*32, 400)
         belt[i] = oldItem
         oldItem = v
         if oldItem == -1 then

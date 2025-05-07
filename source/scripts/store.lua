@@ -11,7 +11,7 @@ local gfx <const> = playdate.graphics
 local itemMap = {}
 local trashInStore = {}
 
-local storeX, storeY = 66,84
+local storeX, storeY = 64,81
 local storeGrid = playdate.ui.gridview.new(32,32)
 storeGrid:setNumberOfColumns(8)
 storeGrid:setNumberOfRowsInSection(1,4)
@@ -34,21 +34,28 @@ for i=1,storeGrid:getNumberOfColumns(),1 do
     end
 end
 
-local bgNineSlice = gfx.nineSlice.new("images/storebg", 16, 16, 32, 32)
-local bgImg = gfx.image.new(276,148)
-gfx.pushContext(bgImg)
-bgNineSlice:drawInRect(0,0,276,148)
-gfx.popContext()
-local bgSpr = gfx.sprite.new(bgImg)
-bgSpr:setCenter(0,0)
-bgSpr:setZIndex(1)
-bgSpr:moveTo(storeX-12, storeY-12)
---bgSpr:add()
+-- local bgNineSlice = gfx.nineSlice.new("images/storebg", 16, 16, 32, 32)
+-- local bgImg = gfx.image.new(276,148)
+-- gfx.pushContext(bgImg)
+-- bgNineSlice:drawInRect(0,0,276,148)
+-- gfx.popContext()
+-- local bgSpr = gfx.sprite.new(bgImg)
+-- bgSpr:setCenter(0,0)
+-- bgSpr:setZIndex(1)
+-- bgSpr:moveTo(storeX-12, storeY-12)
+-- bgSpr:add()
 
 -- Store grid functions
 function store.UpdatePosition(dX,dY)
     storeGrid.needsDisplay = true
     local s,r,c = storeGrid:getSelection()
+    
+    if c+dX > 8 then
+        if playdate.buttonJustPressed(playdate.kButtonRight) then
+            return 0,0, true
+        end
+    end
+    
     storeGrid:setSelection(s,math.min(math.max(r+dY,1),4),math.min(math.max(c+dX, 0), 8))
     s,r,c = storeGrid:getSelection()
     local x,y = storeGrid:getCellBounds(s,r,c)
@@ -163,4 +170,5 @@ end
 -- Customer functions
 function store.update()
     cQueue.update(trashInStore)
+    --storeGrid:drawInRect(storeX, storeY, 276, 148)
 end

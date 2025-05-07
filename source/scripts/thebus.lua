@@ -14,8 +14,8 @@ end
 function bus.FerryCustomers(n)
     for i=1, n, 1 do
         print(i)
-        cQueue.AddCustomerToQueue(Customer(customerdata["rodent"]))
+        cQueue.AddCustomerToQueue(Customer(customerdata["rodent"], -48, 64))
     end
 
-    busTimer = playdate.timer.performAfterDelay(5000, bus.FerryCustomers, math.random(5))
+    busTimer = playdate.timer.performAfterDelay(7500, bus.FerryCustomers, math.random(2))
 end

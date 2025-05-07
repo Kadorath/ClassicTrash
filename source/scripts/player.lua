@@ -58,12 +58,16 @@ function player.update()
         elseif playdate.buttonJustPressed(playdate.kButtonRight) then
             local x,y = store.SetPosition(1,conveyor.GetSelection())
             MovePaw(x,y)
-            section += 1 
+            section += 1
+        elseif playdate.buttonJustPressed(playdate.kButtonLeft) then 
+            local x,y = store.SetPosition(8,conveyor.GetSelection())
+            MovePaw(x,y)
+            section += 1
         elseif playdate.buttonJustPressed(playdate.kButtonA) then
             local newTrash = conveyor.TakeFromBelt()
             rotation = 1
             if newTrash then 
-                newTrash:setZIndex(2)
+                newTrash:setZIndex(4)
                 heldTrash = newTrash 
             end
         end
@@ -78,8 +82,15 @@ function player.update()
             MovePaw(x,y)
         elseif playdate.buttonJustPressed(playdate.kButtonRight) or 
           (playdate.buttonIsPressed(playdate.kButtonRight) and btnHoldRateCt == 0) then
-            local x,y = store.UpdatePosition(1,0)
-            MovePaw(x,y)
+            local x,y,toConveyor = store.UpdatePosition(1,0)
+            if not toConveyor then
+                MovePaw(x,y)
+            else
+                local _,r,_ = store.GetSelection()
+                x,y = conveyor.SetSelection(r)
+                MovePaw(x,y)
+                section -= 1
+            end
         elseif playdate.buttonJustPressed(playdate.kButtonLeft) or 
           (playdate.buttonIsPressed(playdate.kButtonLeft) and btnHoldRateCt == 0) then
             local x,y,toConveyor = store.UpdatePosition(-1,0)
@@ -96,10 +107,10 @@ function player.update()
                 local placed, swappedItem = store.PlaceTrash(heldTrash, rotation)
                 if placed then
                     placeSFX:play(1)
-                    heldTrash:setZIndex(1)
+                    heldTrash:setZIndex(2)
                     heldTrash = swappedItem
                     if heldTrash then
-                        heldTrash:setZIndex(2)
+                        heldTrash:setZIndex(3)
                     end
                     PutTrashInPaw()
                 else
@@ -109,7 +120,7 @@ function player.update()
                 local pickup = store.PickupTrash()
                 if pickup then
                     heldTrash = pickup
-                    heldTrash:setZIndex(2)
+                    heldTrash:setZIndex(3)
                     PutTrashInPaw()
                 end
             end
@@ -125,8 +136,6 @@ function player.update()
             PutTrashInPaw()
         end
     end
-
-    gfx.drawText(cQueue.GetCustomerCount(), 32,32)
 end
 
 function MovePaw(x,y)
