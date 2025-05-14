@@ -1,0 +1,8 @@
+{
+    "rodent": {
+        "name": "Rodent",
+        "img": "customer1",
+        "wants": ["boot", "bannanapeel", "fishbones", "umbrella", "tv"],
+        "patience": 600
+    }
+}

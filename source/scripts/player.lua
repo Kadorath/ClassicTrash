@@ -16,7 +16,10 @@ local moveSFX  = playdate.sound.sampleplayer.new("audio/UIMove")
 local errorSFX = playdate.sound.sampleplayer.new("audio/Error")
 local placeSFX = playdate.sound.sampleplayer.new("audio/UISelect")
 
-local pawSpr = gfx.sprite.new(gfx.image.new("images/paw"))
+local pawOpen = gfx.image.new("images/paw-open")
+local pawGrab = gfx.image.new("images/paw-grab")
+local pawSpr  = gfx.sprite.new(pawOpen)
+
 local x,y = conveyor.UpdateSelection(0)
 pawSpr:setZIndex(100)
 pawSpr:moveTo(x,y)
@@ -64,11 +67,16 @@ function player.update()
             MovePaw(x,y)
             section += 1
         elseif playdate.buttonJustPressed(playdate.kButtonA) then
-            local newTrash = conveyor.TakeFromBelt()
+            local newTrash = conveyor.TakeFromBelt(heldTrash)
+            heldTrash = nil
             rotation = 1
             if newTrash then 
                 newTrash:setZIndex(4)
-                heldTrash = newTrash 
+                heldTrash = newTrash
+                pawSpr:setImage(pawGrab)
+                PutTrashInPaw()
+            else
+                pawSpr:setImage(pawOpen)
             end
         end
     elseif section == 2 then
@@ -111,7 +119,10 @@ function player.update()
                     heldTrash = swappedItem
                     if heldTrash then
                         heldTrash:setZIndex(3)
+                    else
+                        pawSpr:setImage(pawOpen)
                     end
+
                     PutTrashInPaw()
                 else
                     errorSFX:play(1)
@@ -121,6 +132,7 @@ function player.update()
                 if pickup then
                     heldTrash = pickup
                     heldTrash:setZIndex(3)
+                    pawSpr:setImage(pawGrab)
                     PutTrashInPaw()
                 end
             end
@@ -147,6 +159,6 @@ end
 function PutTrashInPaw()
     local x, y = pawSpr:getPosition()
     if heldTrash then
-        heldTrash:moveTo(x,y+28)
+        heldTrash:moveTo(x,y)
     end
 end

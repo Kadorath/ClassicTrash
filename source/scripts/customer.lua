@@ -19,6 +19,13 @@ function Customer:init(data, x, y)
     self.sprite:add()
 
     self.request = data["wants"][math.random(#data["wants"])]
+    self.requestImg = gfx.image.new("images/Trash/"..self.request)
+    self.requestSpr = gfx.sprite.new(self.requestImg)
+    self.requestSpr:setScale(0.5)
+    self.requestSpr:moveTo(x,y-48)
+    self.requestSpr:setZIndex(0)
+    self.requestSpr:add()
+
     self.patience = data["patience"]
 
     self.speed      = 2
@@ -29,7 +36,8 @@ function Customer:init(data, x, y)
     self.state = 1
 end
 
-function Customer:SetMoveTarget(x,y)
+function Customer:SetMoveTarget(x,y,s)
+    self.speed = s or self.speed
     self.moveTarget = {x,y}
     self.moveDir = geo.vector2D.new(self.moveTarget[1]-self.sprite.x, self.moveTarget[2]-self.sprite.y)
     self.moveDir:normalize()
@@ -38,6 +46,10 @@ end
 
 function Customer:SetState(s)
     self.state = s
+
+    if self.state == 3 then
+        self.requestSpr:remove()
+    end
 end
 
 function Customer:update()
@@ -47,10 +59,10 @@ function Customer:update()
         if sqrDistToTarget < 12 then
             self.moveDir = geo.vector2D.new(0,0)
             if self.state == 1 then
-                self.speed = 1
                 self.state += 1
             end
         end
+        self.requestSpr:moveTo(self.sprite.x,self.sprite.y-48)
     end
 
     self.sprite:setImage(self.animator:image())
@@ -58,4 +70,5 @@ end
 
 function Customer:remove()
     self.sprite:remove()
+    self.requestSpr:remove()
 end

@@ -60,9 +60,9 @@ function store.UpdatePosition(dX,dY)
     s,r,c = storeGrid:getSelection()
     local x,y = storeGrid:getCellBounds(s,r,c)
     if c <= 0 then
-        return x+storeX+16,y+storeY-12, true
+        return x+storeX+16,y+storeY+16, true
     else
-        return x+storeX+16,y+storeY-12, false
+        return x+storeX+16,y+storeY+16, false
     end
 end
 
@@ -70,7 +70,7 @@ function store.SetPosition(x,y)
     storeGrid.needsDisplay = true
     storeGrid:setSelection(1,y,x)
     local x,y = storeGrid:getCellBounds(storeGrid:getSelection())
-    return x+storeX+16,y+storeY-12
+    return x+storeX+16,y+storeY+16
 end
 
 function store.GetSelection()
@@ -78,12 +78,63 @@ function store.GetSelection()
 end
 
 function store.PlaceTrash(trash, rot)
-    rot = rot or 1
+    local newTrash = true
+    local toChange, itemAlreadyThere = GetTrashPosOnGrid(trash)
+    if toChange == nil then return false, nil end
+
+    local itemToSwap = nil
+    if itemAlreadyThere then
+        for i,t in ipairs(trashInStore) do
+            if t.id == itemAlreadyThere then
+                itemToSwap = t
+                local responded, stg, shp, cen = itemToSwap:checkResponse(trash)
+                if responded then
+                    toChange = GetTrashPosOnGrid({["shape"]=shp})
+                    if toChange == nil then return false, nil end
+
+                    itemToSwap:SetStage(stg, shp, cen)
+                    newTrash = false
+                    trash:remove()
+                    trash = itemToSwap
+                    itemToSwap = nil
+                else
+                    store.RemoveTrashFromStore(itemAlreadyThere,i)
+                end
+                break
+            end
+        end
+
+        for _,v in ipairs(toChange) do
+            itemMap[v] = trash.id
+        end
+        if newTrash then table.insert(trashInStore, trash) end
+    else
+        for _,v in ipairs(toChange) do
+            itemMap[v] = trash.id
+        end
+        table.insert(trashInStore, trash)
+    end
+
+    local debugStr = ""
+    for i=1,#itemMap,1 do
+        debugStr = debugStr..itemMap[i].." "
+        if i%8 == 0 then debugStr = debugStr.."\n" end
+    end
+    print(debugStr)
+    
+    return true, itemToSwap
+end
+
+function GetTrashPosOnGrid(trash, offX, offY)
+    offX = offX or 0
+    offY = offY or 0
     local w = storeGrid:getNumberOfColumns()
     local h = storeGrid:getNumberOfRowsInSection(1)
-    local cX = 1
-    local cY = 1
+    local cX = #trash.shape//2
+    local cY = #trash.shape[1]//2
     local _,r,c = storeGrid:getSelection()
+    r += offY
+    c += offX
     r -= 1
 
     local itemAlreadyThere = nil
@@ -93,43 +144,21 @@ function store.PlaceTrash(trash, rot)
             if trash.shape[i][j] == 1 then
                 local x = c+j-1-cX
                 local y = r+i-1-cY
-                if y >= h or y < 0 or x > w or x < 1 then return false end 
+                if y >= h or y < 0 or x > w or x < 1 then return nil, nil end 
                 local newToChangeInd = y*w + x
-                print(newToChangeInd, itemMap[newToChangeInd])
+                --print(newToChangeInd, itemMap[newToChangeInd])
                 if itemMap[newToChangeInd] > 0 then
                     if not itemAlreadyThere then
                         itemAlreadyThere = itemMap[newToChangeInd]
                     elseif itemMap[newToChangeInd] ~= itemAlreadyThere then
-                        return false, nil
+                        return nil, nil
                     end
                 end
                 table.insert(toChange, newToChangeInd)
             end
         end
     end
-    for _,v in ipairs(toChange) do
-        itemMap[v] = trash.id
-    end
-    table.insert(trashInStore, trash)
-
-    -- local debugStr = ""
-    -- for i=1,#itemMap,1 do
-    --     debugStr = debugStr..itemMap[i].." "
-    --     if i%8 == 0 then debugStr = debugStr.."\n" end
-    -- end
-    -- print(debugStr)
-
-    local itemToSwap = nil
-    if itemAlreadyThere then
-        for i,trash in ipairs(trashInStore) do
-            if trash.id == itemAlreadyThere then
-                itemToSwap = trash
-                store.RemoveTrashFromStore(itemAlreadyThere,i)
-                break
-            end
-        end
-    end
-    return true, itemToSwap
+    return toChange, itemAlreadyThere
 end
 
 function store.PickupTrash()

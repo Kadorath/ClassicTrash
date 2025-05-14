@@ -10,6 +10,7 @@ import "scripts/store"
 
 import "scripts/thebus"
 import "scripts/thetruck"
+import "scripts/cashregister"
 
 local gfx <const> = playdate.graphics
 
@@ -34,8 +35,9 @@ startmenuBG:moveTo(0,0)
 startmenuBG:setZIndex(-1)
 startmenuBG:add()
 
+deltaTime = 0
+
 gameState = 1
-money = 0
 
 function GameStart()
     truck.Init()
@@ -48,6 +50,8 @@ function GameStart()
 end
 
 function playdate.update()
+    deltaTime = playdate.getElapsedTime()
+    
     gfx.sprite.update()
 
     if gameState == 1 then
@@ -59,11 +63,14 @@ function playdate.update()
         conveyor.update()
         store.update()
         incinerator.update()
+        cashregister.update()
     end
 
     if gameState == 2 then
-        gfx.drawText(money, 72, 224)
+        gfx.drawText(cashregister.GetMoney(), 72, 224)
     end
 
     playdate.timer.updateTimers()
+
+    playdate.resetElapsedTime()
 end

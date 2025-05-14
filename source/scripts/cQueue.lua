@@ -1,5 +1,5 @@
 import "scripts/store"
-
+import "scripts/cashregister"
 cQueue = {}
 
 local gfx <const> = playdate.graphics
@@ -13,27 +13,28 @@ function cQueue.update(trashInStore)
     while idx <= #customerQueue do
         local customer = customerQueue[idx]
         
-        for i,trash in ipairs(trashInStore) do
-            if trash.name == customer.request then
-                CustomerPurchase(i, trash, customer)
-                table.remove(customerQueue, idx)
-                idx -= 1
-                break
+        if customer.state == 2 then
+            for i,trash in ipairs(trashInStore) do
+                if trash.name == customer.request then
+                    CustomerPurchase(i, trash, customer)
+                    table.remove(customerQueue, idx)
+                    idx -= 1
+                    break
+                end
             end
-        end
 
-        customer.patience -= 1
-        if customer.patience <= 0 then
-            CustomerStormOff(idx, customer)
-            idx -= 1
+            customer.patience -= 1
+            if customer.patience <= 0 then
+                CustomerStormOff(idx, customer)
+                idx -= 1
+            end
         end
 
         customer:update()
 
         if customer.moveDir.dx == 0 and customer.moveDir.dy == 0 then
-            print(queueRect.x, queueRect.x+queueRect.w, queueRect.x, queueRect.y+queueRect.h)
             customer:SetMoveTarget(math.random(queueRect.x, queueRect.x+queueRect.w), 
-                                   math.random(queueRect.y, queueRect.y+queueRect.h))
+                                   math.random(queueRect.y, queueRect.y+queueRect.h), 0.5)
         end
 
         idx += 1
@@ -57,22 +58,24 @@ end
 
 function cQueue.AddCustomerToQueue(c)
     table.insert(customerQueue, c)
-    c:SetMoveTarget(212, 64)
+    c:SetMoveTarget(212, 64, 2)
 end
 
 function CustomerStormOff(idx, c)
     print("Customer "..idx.." stormed off")
     table.remove(customerQueue, idx)
     table.insert(customerLeaving, c)
-    c:SetMoveTarget(432, 48)
+    c:SetMoveTarget(432, 48, 2)
 end
 
 function CustomerPurchase(idx, trash, c)
     store.RemoveTrashFromStore(trash.id, idx)
     trash:remove()
     table.insert(customerLeaving, c)
-    c:SetMoveTarget(432, 48)
-    money += 4
+    c:SetMoveTarget(432, 48, 2)
+    c:SetState(3)
+
+    cashregister.score(4)
 end
 
 function cQueue.GetCustomerCount()

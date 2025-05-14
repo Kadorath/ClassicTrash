@@ -11,19 +11,44 @@ function Trash:init(name, data)
     self.name = name
     self.id = nextTrashID
     nextTrashID += 1
-    local newImg = gfx.image.new("images/Trash/"..data["img"])
-    self.sprite = gfx.sprite.new(newImg)
+
+    self.stageCt = data["stages"] or 1
+    self.stage   = 1
+    self.img = nil
+    self.sprite = nil
+    if self.stageCt == 1 then
+        self.img = gfx.image.new("images/Trash/"..data["img"])
+        self.sprite = gfx.sprite.new(self.img)
+    else
+        self.img = gfx.imagetable.new("images/Trash/"..data["img"])
+        self.sprite = gfx.sprite.new(self.img[1])
+    end
     self.sprite:setGroups({3})
     
+    self.rotation = 0
     self.shape = {}
-    for _,r in ipairs(data["shape"]) do
+    local shapeData  = nil
+    local centerData = nil
+    if self.stageCt == 1 then
+        shapeData  = data["shape"]
+        centerData = data["center"]
+    else
+        self.shapeList  = data["shape"]
+        self.centerList = data["center"] 
+        shapeData  = data["shape"][self.stage]
+        centerData = data["center"][self.stage]
+    end
+
+    for _,r in ipairs(shapeData) do
         local newRow = {}
         for _,v in ipairs(r) do
             table.insert(newRow, v)
         end
         table.insert(self.shape, newRow)
     end
-    self.center = {data["center"][1], data["center"][2]}
+    self.center = {centerData[1], centerData[2]}
+
+    self.response = data["response"]
 
     -- Conveyor belt movement parameters
     self.beltTargetX = 0
@@ -33,11 +58,39 @@ function Trash:init(name, data)
     self.velocity = {(math.random()-0.5)*0.25,0}
 end
 
+function Trash:checkResponse(other)
+    if self.response then
+        for k,r in pairs(self.response) do
+            print(k, other.name)
+            if k == other.name then
+                local newStage = self.stage + r
+                if other.stage + r > newStage then
+                    newStage = other.stage + r
+                end
+                newStage = math.min(newStage, 4)
+                local newShape = self.shapeList[newStage]
+                local newCenter = self.centerList[newStage]
+                for i=1, self.rotation, 1 do
+                    Rotate90(newShape)
+                end
+                return true, newStage, newShape, newCenter
+            end
+        end
+    end
+    return false, nil, nil, nil
+end
+
+function Trash:SetStage(stage, s, c)
+    self.stage = stage
+    self.shape = s
+    self.center = c
+    self.sprite:setCenter(self.center[1], self.center[2])
+    self.sprite:setImage(self.img[self.stage])
+end
+
 function Trash:getSprite()
     return self.sprite
 end
-
-
 function Trash:add()
     self.sprite:add()
 end
@@ -80,39 +133,49 @@ function Trash:setCenter(x,y)
     self.sprite:setCenter(x,y)
 end
 function Trash:rotateClockwise()
+    self.rotation += 1
     self.sprite:setRotation(self.sprite:getRotation()+90)
     if self.sprite:getRotation() == 0 then
+        self.rotation = 0
         self.sprite:setRotation(0)
         self.sprite:setCenter(self.center[1], self.center[2])
     end
-    
+
+    Rotate90(self.shape)
+end
+
+function Rotate90(mat)
     -- Rotate the shape matrix
     local debugStr = ""
-    for i=1,#self.shape,1 do
-        for j=1,#self.shape,1 do
-            debugStr = debugStr..self.shape[i][j].." "
+    for i=1,#mat,1 do
+        for j=1,#mat,1 do
+            debugStr = debugStr..mat[i][j].." "
         end
         debugStr = debugStr.."\n"
     end
     print(debugStr)
 
-    for i=1,#self.shape,1 do
-        for j=i,#self.shape[i],1 do
-            local temp = self.shape[i][j]
-            self.shape[i][j] = self.shape[j][i]
-            self.shape[j][i] = temp
+    -- transpose
+    for i=1,#mat,1 do
+        for j=i,#mat[i],1 do
+            local temp = mat[i][j]
+            mat[i][j] = mat[j][i]
+            mat[j][i] = temp
         end
     end
-    for i=1,#self.shape,1 do
-        local temp = self.shape[i][1]
-        self.shape[i][1] = self.shape[i][3]
-        self.shape[i][3] = temp
+    -- reverse rows
+    for i=1,#mat,1 do
+        for j=1,#mat[i]//2,1 do
+            local temp = mat[i][j]
+            mat[i][j] = mat[i][#mat-j+1]
+            mat[i][#mat-j+1] = temp
+        end
     end
 
     debugStr = ""
-    for i=1,#self.shape,1 do
-        for j=1,#self.shape,1 do
-            debugStr = debugStr..self.shape[i][j].." "
+    for i=1,#mat,1 do
+        for j=1,#mat,1 do
+            debugStr = debugStr..mat[i][j].." "
         end
         debugStr = debugStr.."\n"
     end

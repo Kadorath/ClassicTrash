@@ -20,13 +20,13 @@ floorCol:add()
 local leftWallCol = gfx.sprite.new()
 leftWallCol:setSize(6, incinH+72)
 leftWallCol:setCenter(0,0)
-leftWallCol:moveTo(incinX-4, incinY-72)
+leftWallCol:moveTo(incinX-2, incinY-72)
 leftWallCol:setCollideRect(0,0,leftWallCol:getSize())
 leftWallCol:setGroups({1})
 leftWallCol:add()
 
 local rightWallCol = leftWallCol:copy()
-rightWallCol:moveTo(incinX+incinW-4, incinY-72)
+rightWallCol:moveTo(incinX+incinW-2, incinY-72)
 rightWallCol:add()
 
 local topTrash = nil
