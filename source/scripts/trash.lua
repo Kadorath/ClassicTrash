@@ -67,7 +67,8 @@ function Trash:checkResponse(other)
                 if other.stage + r > newStage then
                     newStage = other.stage + r
                 end
-                newStage = math.min(newStage, 4)
+                if newStage > self.stageCt then return false, nil, nil, nil end
+
                 local newShape = self.shapeList[newStage]
                 local newCenter = self.centerList[newStage]
                 for i=1, self.rotation, 1 do
@@ -86,6 +87,10 @@ function Trash:SetStage(stage, s, c)
     self.center = c
     self.sprite:setCenter(self.center[1], self.center[2])
     self.sprite:setImage(self.img[self.stage])
+end
+
+function Trash:Purchased()
+    return true
 end
 
 function Trash:getSprite()

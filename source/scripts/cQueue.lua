@@ -70,6 +70,7 @@ end
 
 function CustomerPurchase(idx, trash, c)
     store.RemoveTrashFromStore(trash.id, idx)
+    trash:Purchased()
     trash:remove()
     table.insert(customerLeaving, c)
     c:SetMoveTarget(432, 48, 2)
