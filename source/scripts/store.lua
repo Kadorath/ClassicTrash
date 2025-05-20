@@ -177,6 +177,32 @@ function store.PickupTrash()
     return nil
 end
 
+function ReservoirSample(table, n)
+    local returnTable = {}
+    n = math.min(n, #trashInStore)
+
+    for i=1, n, 1 do
+        returnTable[i] = trashInStore[i]
+    end
+
+    for i=n+1, #trashInStore, 1 do
+        local r = math.random(1, i)
+        if r <= n then
+            returnTable[r] = trashInStore[i]
+        end
+    end
+
+    return returnTable
+end
+
+function store.SweetenTrash(n)
+    local targetTrash = ReservoirSample(trashInStore, n)
+    print(#targetTrash)
+    for _,v in ipairs(targetTrash) do
+        print(v.name)
+    end
+end
+
 function store.RemoveTrashFromStore(id, idx)
     for i=1, #itemMap, 1 do
         if itemMap[i] == id then

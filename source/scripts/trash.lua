@@ -1,5 +1,6 @@
 import "CoreLibs/animator"
 import "CoreLibs/object"
+import "scripts/store"
 
 local gfx <const> = playdate.graphics
 
@@ -11,6 +12,7 @@ function Trash:init(name, data)
     self.name = name
     self.id = nextTrashID
     nextTrashID += 1
+    self.value = data["value"] or 1
 
     self.stageCt = data["stages"] or 1
     self.stage   = 1
@@ -63,18 +65,20 @@ function Trash:checkResponse(other)
         for k,r in pairs(self.response) do
             print(k, other.name)
             if k == other.name then
-                local newStage = self.stage + r
-                if other.stage + r > newStage then
-                    newStage = other.stage + r
-                end
-                if newStage > self.stageCt then return false, nil, nil, nil end
+                if r == "stack" then
+                    local newStage = math.min(self.stageCt, self.stage + other.stage)
 
-                local newShape = self.shapeList[newStage]
-                local newCenter = self.centerList[newStage]
-                for i=1, self.rotation, 1 do
-                    Rotate90(newShape)
+                    if other.stage >= self.stageCt or self.stage >= self.stageCt then 
+                        return false, nil, nil, nil 
+                    end
+
+                    local newShape = self.shapeList[newStage]
+                    local newCenter = self.centerList[newStage]
+                    for i=1, self.rotation, 1 do
+                        Rotate90(newShape)
+                    end
+                    return true, newStage, newShape, newCenter
                 end
-                return true, newStage, newShape, newCenter
             end
         end
     end
@@ -90,7 +94,12 @@ function Trash:SetStage(stage, s, c)
 end
 
 function Trash:Purchased()
-    return true
+    local sellValue = self.value
+    print(self.name)
+    if self.name == "cottoncandy" then
+        store.SweetenTrash(self.stage)
+    end
+    return sellValue
 end
 
 function Trash:getSprite()
