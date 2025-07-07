@@ -143,6 +143,9 @@ end
 function Trash:setScale(s)
     self.sprite:setScale(s)
 end
+function Trash:setRotation(r)
+    self.sprite:setRotation(r)
+end
 function Trash:setCenter(x,y)
     self.sprite:setCenter(x,y)
 end

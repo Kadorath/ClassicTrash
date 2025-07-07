@@ -35,8 +35,11 @@ function conveyor.update()
     end
     if toIncineratorItem then
         if toIncineratorItem:UpdateBeltPosition() then
-            if not incinerator.IsFull() and elapsedFrames > lagTime then
-                incinerator.AddToIncinerator(toIncineratorItem)
+            -- if not incinerator.IsFull() and elapsedFrames > lagTime then
+            --     incinerator.AddToIncinerator(toIncineratorItem)
+            --     toIncineratorItem = nil
+            -- end
+            if store.PlaceTrashRandomly(toIncineratorItem) then
                 toIncineratorItem = nil
             end
         end
@@ -64,6 +67,7 @@ function conveyor.AddToBelt(trash, idx)
     trash:moveTo(beltX,0)
     trash:setZIndex(2)
     trash:setScale(0.5)
+    trash:setRotation(math.random(1,360))
 
     local oldItem = trash
     for i,v in ipairs(belt) do

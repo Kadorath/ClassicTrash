@@ -1,5 +1,6 @@
 import "scripts/conveyor"
 import "scripts/store"
+import "scripts/incinerator"
 import "scripts/cQueue"
 
 player = {}
@@ -11,6 +12,8 @@ local btnHold          = 0
 local btnHoldThreshold = 20
 local btnHoldRate      = 2
 local btnHoldRateCt    = btnHoldRate
+
+local bBtnHeld = false
 
 local moveSFX  = playdate.sound.sampleplayer.new("audio/UIMove")
 local errorSFX = playdate.sound.sampleplayer.new("audio/Error")
@@ -51,6 +54,7 @@ function player.update()
     end
     lastDPadInput = curDPadInput
 
+    -- Paw over Conveyor Belt
     if section == 1 then
         if playdate.buttonJustPressed(playdate.kButtonUp) then
             local x,y = conveyor.UpdateSelection(-1)
@@ -79,6 +83,7 @@ function player.update()
                 pawSpr:setImage(pawOpen)
             end
         end
+    -- Paw over Store Grid
     elseif section == 2 then
         if playdate.buttonJustPressed(playdate.kButtonUp) or 
           (playdate.buttonIsPressed(playdate.kButtonUp) and btnHoldRateCt == 0) then
@@ -139,14 +144,17 @@ function player.update()
         end
     end
 
-    if heldTrash then
-        if playdate.buttonJustPressed(playdate.kButtonB) then
+    if playdate.buttonJustReleased(playdate.kButtonB) then
+        if heldTrash and not bBtnHeld then
+            print('rotating')
             rotation += 1
             heldTrash:rotateClockwise()
             if rotation > 4 then rotation = 1 end
 
             PutTrashInPaw()
         end
+
+        bBtnHeld = false
     end
 end
 
@@ -159,6 +167,24 @@ end
 function PutTrashInPaw()
     local x, y = pawSpr:getPosition()
     if heldTrash then
+        heldTrash:setRotation(90*heldTrash.rotation)
+        heldTrash:setCenter(heldTrash.center[1], heldTrash.center[2])
         heldTrash:moveTo(x,y)
+    end
+end
+
+function playdate.BButtonHeld()
+    if heldTrash then
+        if not incinerator.IsFull() then
+            heldTrash:setCenter(0.5, 0.5)
+            heldTrash:setZIndex(2)
+            heldTrash:setScale(0.5)
+            incinerator.AddToIncinerator(heldTrash)
+            heldTrash = nil
+        else
+            errorSFX:play(1)
+        end
+
+        bBtnHeld = true
     end
 end

@@ -77,9 +77,31 @@ function store.GetSelection()
     return storeGrid:getSelection()
 end
 
+function store.PlaceTrashRandomly(trash)
+    for i=1,10,1 do
+        local r,c = math.random(1,4), math.random(1,7)
+        local toChange, itemAlreadyThere = GetTrashPosOnGrid(trash, r, c)
+
+        if itemAlreadyThere == nil and toChange ~= nil then
+            trash:setRotation(0)
+            trash:setScale(1)
+            trash:setCenter(trash.center[1], trash.center[2])
+            trash:moveTo(storeX + c*32 - 16, storeY + r*32 - 16)
+            for _,v in ipairs(toChange) do
+                itemMap[v] = trash.id
+            end
+            table.insert(trashInStore, trash)
+            return true
+        end
+    end
+
+    return false
+end
+
 function store.PlaceTrash(trash, rot)
     local newTrash = true
-    local toChange, itemAlreadyThere = GetTrashPosOnGrid(trash)
+    local _,r,c = storeGrid:getSelection()
+    local toChange, itemAlreadyThere = GetTrashPosOnGrid(trash, r, c)
     if toChange == nil then return false, nil end
 
     local itemToSwap = nil
@@ -89,7 +111,7 @@ function store.PlaceTrash(trash, rot)
                 itemToSwap = t
                 local responded, stg, shp, cen = itemToSwap:checkResponse(trash)
                 if responded then
-                    toChange = GetTrashPosOnGrid({["shape"]=shp})
+                    toChange = GetTrashPosOnGrid({["shape"]=shp}, r, c)
                     if toChange == nil then return false, nil end
 
                     itemToSwap:SetStage(stg, shp, cen)
@@ -125,14 +147,22 @@ function store.PlaceTrash(trash, rot)
     return true, itemToSwap
 end
 
-function GetTrashPosOnGrid(trash, offX, offY)
+-- TAKES: a Trash, a row, a column, and some optional offsets
+-- Checks the shape of the Trash at the given r and column
+-- against the current store grid.
+-- RETURNS: 
+-- toChange: store grid locations that would be occupied by the
+-- trash
+-- itemAlreadyThere: one trash that it would intersect with, if any
+-- If given trash would intersect more than one other trash or
+-- has some part that is off the grid, toChange is nil
+function GetTrashPosOnGrid(trash, r, c, offX, offY)
     offX = offX or 0
     offY = offY or 0
     local w = storeGrid:getNumberOfColumns()
     local h = storeGrid:getNumberOfRowsInSection(1)
     local cX = #trash.shape//2
     local cY = #trash.shape[1]//2
-    local _,r,c = storeGrid:getSelection()
     r += offY
     c += offX
     r -= 1

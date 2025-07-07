@@ -18,7 +18,7 @@ end
 
 function truck.Dump()
     local tName = trashIDs[math.random(#trashIDs)]
-    if math.random() < 0.5 then tName = "cottoncandy" else tName = "bannanapeel" end
+
     local rTrash = trashdata[tName]
     local newTrash = Trash(tName, rTrash)
     conveyor.AddToDepot(newTrash)
