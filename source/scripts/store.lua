@@ -10,6 +10,7 @@ local gfx <const> = playdate.graphics
 -- Store grid and item map
 local itemMap = {}
 local trashInStore = {}
+local fallingTrash = {}
 
 local storeX, storeY = 64,81
 local storeGrid = playdate.ui.gridview.new(32,32)
@@ -98,9 +99,41 @@ function store.PlaceTrashRandomly(trash)
     return false
 end
 
-function store.PlaceTrash(trash, rot)
+function store.GetAvailableSpace(trash)
+    for i=1,10,1 do
+        local r,c = math.random(1,4), math.random(1,7)
+        local toChange, itemAlreadyThere = GetTrashPosOnGrid(trash, r, c)
+        
+        if itemAlreadyThere == nil and toChange ~= nil then
+            return r, c, storeX + c*32 - 16, storeY + r*32 - 16
+        end
+    end
+
+    return nil,nil
+end
+
+function store.ReserveSpace(trash, rot, r, c)
+    local toChange, itemAlreadyThere = GetTrashPosOnGrid(trash, r, c)
+    if itemAlreadyThere == nil and toChange ~= nil then
+        for _,v in ipairs(toChange) do
+            itemMap[v] = -trash.id
+        end
+    end
+end
+
+function store.DropIntoStore(trash, targetR, targetC)
+    trash:SetStoreFallAnimator(targetR, targetC)
+    trash:setRotation(0)
+    trash:setScale(1)
+    trash:setCenter(trash.center[1], trash.center[2])
+    table.insert(fallingTrash, trash)
+end
+
+function store.PlaceTrash(trash, rot, r, c)
     local newTrash = true
-    local _,r,c = storeGrid:getSelection()
+    if r == nil and c == nil then
+        _,r,c = storeGrid:getSelection()
+    end
     local toChange, itemAlreadyThere = GetTrashPosOnGrid(trash, r, c)
     if toChange == nil then return false, nil end
 
@@ -183,6 +216,8 @@ function GetTrashPosOnGrid(trash, r, c, offX, offY)
                     elseif itemMap[newToChangeInd] ~= itemAlreadyThere then
                         return nil, nil
                     end
+                elseif itemMap[newToChangeInd] < 0 and itemMap[newToChangeInd] ~= -trash.id then
+                    return nil, nil
                 end
                 table.insert(toChange, newToChangeInd)
             end
@@ -256,4 +291,25 @@ end
 function store.update()
     cQueue.update(trashInStore)
     --storeGrid:drawInRect(storeX, storeY, 276, 148)
+
+    local i = 1
+
+    while #fallingTrash > 0 and i <= #fallingTrash do
+        local t = fallingTrash[i]
+        t:moveTo(t.storeFallAnimator:currentValue())
+
+        if t.storeFallAnimator:ended() then
+            for idx,v in ipairs(fallingTrash) do
+                if v == t then
+                    table.remove(fallingTrash, idx)
+                    i -= 1
+                    t:setZIndex(2)
+                    store.PlaceTrash(t, 1, t.storeTargetR, t.storeTargetC)
+                    break
+                end
+            end
+        end
+
+        i += 1
+    end
 end

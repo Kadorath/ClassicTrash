@@ -39,7 +39,13 @@ function conveyor.update()
             --     incinerator.AddToIncinerator(toIncineratorItem)
             --     toIncineratorItem = nil
             -- end
-            if store.PlaceTrashRandomly(toIncineratorItem) then
+            local r,c,x,y = store.GetAvailableSpace(toIncineratorItem)
+            if r ~= nil then
+                print("found available space")
+                store.ReserveSpace(toIncineratorItem, 1, r, c)
+                toIncineratorItem:setStoreTarget(r,c)
+                toIncineratorItem:setZIndex(3)
+                store.DropIntoStore(toIncineratorItem,x,y)
                 toIncineratorItem = nil
             end
         end
@@ -47,7 +53,7 @@ function conveyor.update()
 
     elapsedFrames += 1
     if #depot > 0 and elapsedFrames >= speed and 
-        (toIncineratorItem == nil or onBelt < capacity) then
+        (toIncineratorItem == nil or onBelt < capacity-1) then
         conveyor.AddToBelt(table.remove(depot))
         elapsedFrames = 0
     end

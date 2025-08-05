@@ -58,6 +58,10 @@ function Trash:init(name, data)
     self.beltPosAnimator = nil
     -- Incinerator physics parameters
     self.velocity = {(math.random()-0.5)*0.25,0}
+    -- Store Grid animators
+    self.storeTargetR = nil
+    self.storeTargetC = nil
+    self.storeFallAnimator = nil
 end
 
 function Trash:checkResponse(other)
@@ -117,6 +121,8 @@ end
 function Trash:moveBy(x,y)
     self.sprite:moveBy(x,y)
 end
+
+-- Belt Functions
 function Trash:SetBeltPosition(x,y,time)
     time = time or 250
     self.beltTargetX = x
@@ -130,6 +136,15 @@ function Trash:UpdateBeltPosition()
     return self.beltPosAnimator:ended()
 end
 
+function Trash:setStoreTarget(r,c)
+    self.storeTargetR = r
+    self.storeTargetC = c
+end
+function Trash:SetStoreFallAnimator(targetX, targetY)
+    local fallLine = playdate.geometry.lineSegment.new(targetX, -64, targetX, targetY)
+    self.storeFallAnimator = gfx.animator.new(1000, fallLine, playdate.easingFunctions.outBounce)
+end
+
 function Trash:moveWithCollisions(x,y)
     return self.sprite:moveWithCollisions(x,y)
 end
@@ -137,18 +152,7 @@ function Trash:updateVelocity(x,y)
     self.velocity[1] += x
     self.velocity[2] += y
 end
-function Trash:setZIndex(z)
-    self.sprite:setZIndex(z)
-end
-function Trash:setScale(s)
-    self.sprite:setScale(s)
-end
-function Trash:setRotation(r)
-    self.sprite:setRotation(r)
-end
-function Trash:setCenter(x,y)
-    self.sprite:setCenter(x,y)
-end
+
 function Trash:rotateClockwise()
     self.rotation += 1
     self.sprite:setRotation(self.sprite:getRotation()+90)
@@ -199,13 +203,6 @@ function Rotate90(mat)
     print(debugStr)
 end
 
-function Trash:getPosition()
-    return self.sprite.x, self.sprite.y
-end
-function Trash:getSize()
-    return self.sprite:getSize()
-end
-
 function Trash:setCollideRect(x,y,w,h)
     self.sprite:setCollideRect(x,y,w,h)
     self.sprite:setCollidesWithGroups({1,2,3})
@@ -223,4 +220,26 @@ function Trash:incineratorCollision(x, y, collisions, length)
         --self.velocity[1] += (math.random()-0.5)
         self.velocity[2] *= -0.25
     end
+end
+
+-- Setters
+function Trash:setZIndex(z)
+    self.sprite:setZIndex(z)
+end
+function Trash:setScale(s)
+    self.sprite:setScale(s)
+end
+function Trash:setRotation(r)
+    self.sprite:setRotation(r)
+end
+function Trash:setCenter(x,y)
+    self.sprite:setCenter(x,y)
+end
+
+-- Getters
+function Trash:getPosition()
+    return self.sprite.x, self.sprite.y
+end
+function Trash:getSize()
+    return self.sprite:getSize()
 end
