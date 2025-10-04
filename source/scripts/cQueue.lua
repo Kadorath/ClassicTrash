@@ -153,7 +153,7 @@ function UpdateCustomerPaws()
 
         if customerPaws[i].anim:ended() then
             customerPaws[i].sprite:remove()
-            customerPaws[i].targetTrash.sprite:remove()
+            customerPaws[i].targetTrash:remove()
             table.remove(customerPaws, i)
         end
     end

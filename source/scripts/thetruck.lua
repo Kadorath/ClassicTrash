@@ -26,6 +26,7 @@ function truck.Dump()
         tName = trashIDs[math.random(#trashIDs)]
     end
     tName = "fishbones"
+    if math.random() < 0.75 then tName = "cottoncandy" end
 
     local rTrash = trashdata[tName]
     local newTrash = Trash(tName, rTrash)

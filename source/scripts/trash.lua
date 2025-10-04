@@ -125,11 +125,13 @@ function Trash:Purchased()
         store.SweetenTrash(self.stage)
     end
 
-    for _,tag in ipairs(self.tags) do
-        if tag == "wet" then
-            store.WetTrash(self)
-        elseif tag == "sparky" then
-            print('sparky')
+    if self.tags ~= nil then
+        for _,tag in ipairs(self.tags) do
+            if tag == "wet" then
+                store.WetTrash(self)
+            elseif tag == "sparky" then
+                print('sparky')
+            end
         end
     end
 
@@ -148,6 +150,14 @@ function Trash:Splash()
     if self.splashed then return end
     self.splashed = true
     print("Splashed: "..self.name, self.id)
+
+    if self.name == "cottoncandy" then
+        local sellValue = self:Purchased()
+        AddScoreBlinkerUI(self.sprite.x, self.sprite.y, sellValue)
+        store.RemoveTrashFromStore(self.id)
+        self:remove()
+        cashregister.score(sellValue)
+    end
 end
 
 function Trash:getSprite()

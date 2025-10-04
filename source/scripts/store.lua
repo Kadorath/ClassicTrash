@@ -310,15 +310,15 @@ function store.WetTrash(centerTrash)
     end
 
     -- Splash other trash in wet zone
-
     local w = storeGrid:getNumberOfColumns()
     local splashedTrashIDs = {}
     for r,row in ipairs(wetZone) do
         for c,_ in ipairs(row) do
-            local wR = centerTrash.storeRow + r-1 - (#wetZone // 2) - 1
-            local wC = centerTrash.storeCol + c-1 - (#wetZone // 2) - 1
+            local wR = centerTrash.storeRow + r - (#wetZone // 2) - 1
+            local wC = centerTrash.storeCol + c - (#wetZone // 2) - 1
+            print (wR, wC)
             local trashID = itemMap[(wR-1)*w + wC]
-            if trashID ~= nil and trashID ~= 0 then
+            if trashID ~= nil and trashID ~= 0 and wetZone[r][c] == 1 then
                 local alreadySplashed = false
                 for _,id in ipairs(splashedTrashIDs) do
                     if id == trashID then
@@ -354,14 +354,23 @@ function store.RemoveTrashFromStore(id, idx)
         end
     end
     
-    table.remove(trashInStore, idx)
-
-    local debugStr = ""
-    for i=1,#itemMap,1 do
-        debugStr = debugStr..itemMap[i].." "
-        if i%8 == 0 then debugStr = debugStr.."\n" end
+    if idx ~= nil then
+        table.remove(trashInStore, idx)
+    else
+        for i=1, #trashInStore, 1 do
+            if trashInStore[i].id == id then
+                table.remove(trashInStore, i)
+                break
+            end
+        end
     end
-    print(debugStr)
+
+    -- local debugStr = ""
+    -- for i=1,#itemMap,1 do
+    --     debugStr = debugStr..itemMap[i].." "
+    --     if i%8 == 0 then debugStr = debugStr.."\n" end
+    -- end
+    -- print(debugStr)
 
     return true
 end
