@@ -75,7 +75,7 @@ function player.update()
             heldTrash = nil
             rotation = 1
             if newTrash then 
-                newTrash:setZIndex(4)
+                newTrash:setZIndex(5)
                 heldTrash = newTrash
                 pawSpr:setImage(pawGrab)
                 PutTrashInPaw()
@@ -123,7 +123,7 @@ function player.update()
                     heldTrash:setZIndex(2)
                     heldTrash = swappedItem
                     if heldTrash then
-                        heldTrash:setZIndex(3)
+                        heldTrash:setZIndex(4)
                     else
                         pawSpr:setImage(pawOpen)
                     end
@@ -136,7 +136,7 @@ function player.update()
                 local pickup = store.PickupTrash()
                 if pickup then
                     heldTrash = pickup
-                    heldTrash:setZIndex(3)
+                    heldTrash:setZIndex(4)
                     pawSpr:setImage(pawGrab)
                     PutTrashInPaw()
                 end

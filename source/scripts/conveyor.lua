@@ -44,7 +44,7 @@ function conveyor.update()
                 print("found available space")
                 store.ReserveSpace(toIncineratorItem, 1, r, c)
                 toIncineratorItem:setStoreTarget(r,c)
-                toIncineratorItem:setZIndex(3)
+                toIncineratorItem:setZIndex(4)
                 store.DropIntoStore(toIncineratorItem,x,y)
                 toIncineratorItem = nil
             end

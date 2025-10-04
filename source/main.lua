@@ -1,4 +1,5 @@
 import "CoreLibs/graphics"
+import "CoreLibs/animation"
 import "CoreLibs/sprites"
 import "CoreLibs/timer"
 import "CoreLibs/math"
@@ -27,7 +28,7 @@ beltBG:setZIndex(1)
 local bordersBG = gfx.sprite.new(gfx.image.new("images/BGs/bordersBG"))
 bordersBG:setCenter(0,0)
 bordersBG:moveTo(0,0)
-bordersBG:setZIndex(3)
+bordersBG:setZIndex(4)
 
 local startmenuBG = gfx.sprite.new(gfx.image.new("images/BGs/startmenuBG"))
 startmenuBG:setCenter(0,0)
@@ -52,6 +53,7 @@ end
 function playdate.update()
     deltaTime = playdate.getElapsedTime()
     
+    gfx.animation.blinker.updateAll()
     gfx.sprite.update()
 
     if gameState == 1 then
