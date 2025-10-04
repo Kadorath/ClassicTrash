@@ -142,12 +142,14 @@ function store.PlaceTrash(trash, rot, r, c)
         for i,t in ipairs(trashInStore) do
             if t.id == itemAlreadyThere then
                 itemToSwap = t
-                local responded, stg, shp, cen = itemToSwap:checkResponse(trash)
+                local responded, stg, shp, cen, rot = itemToSwap:checkResponse(trash)
                 if responded then
                     toChange = GetTrashPosOnGrid({["shape"]=shp}, r, c)
                     if toChange == nil then return false, nil end
 
                     itemToSwap:SetStage(stg, shp, cen)
+                    itemToSwap.rotation = rot
+                    itemToSwap.sprite:setRotation(90 * rot)
                     newTrash = false
                     trash:remove()
                     trash = itemToSwap

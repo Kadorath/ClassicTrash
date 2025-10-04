@@ -16,6 +16,7 @@ function Trash:init(name, data)
 
     self.stageCt = data["stages"] or 1
     self.stage   = 1
+    self.minsellstage = data["minsellstage"] or 1
     self.img = nil
     self.sprite = nil
     if self.stageCt == 1 then
@@ -37,7 +38,7 @@ function Trash:init(name, data)
     else
         self.shapeList  = data["shape"]
         self.centerList = data["center"] 
-        shapeData  = data["shape"][self.stage]
+        shapeData  = copy(data["shape"][self.stage])
         centerData = data["center"][self.stage]
     end
 
@@ -76,12 +77,29 @@ function Trash:checkResponse(other)
                         return false, nil, nil, nil 
                     end
 
-                    local newShape = self.shapeList[newStage]
+                    local newShape = copy(self.shapeList[newStage])
                     local newCenter = self.centerList[newStage]
-                    for i=1, self.rotation, 1 do
+                    local newRot = self.rotation
+                    if other.stage > self.stage then newRot = other.rotation end
+                    for i=1, newRot, 1 do
                         Rotate90(newShape)
                     end
-                    return true, newStage, newShape, newCenter
+                    print(newShape, self.shapeList[newStage])
+                    for i,v in ipairs(self.shapeList[newStage]) do
+                        local debugStr = ""
+                        for _,c in ipairs(v) do
+                            debugStr = debugStr..c
+                        end
+                        print(debugStr)
+                    end
+                    for i,v in ipairs(newShape) do
+                        local debugStr = ""
+                        for _,c in ipairs(v) do
+                            debugStr = debugStr..c
+                        end
+                        print(debugStr)
+                    end
+                    return true, newStage, newShape, newCenter, newRot
                 end
             end
         end
@@ -99,7 +117,6 @@ end
 
 function Trash:Purchased()
     local sellValue = self.value
-    print(self.name)
     if self.name == "cottoncandy" then
         store.SweetenTrash(self.stage)
     end

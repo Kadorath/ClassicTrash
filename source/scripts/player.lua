@@ -136,6 +136,7 @@ function player.update()
                 local pickup = store.PickupTrash()
                 if pickup then
                     heldTrash = pickup
+                    print("Picked Up: ", heldTrash.name, heldTrash.rotation)
                     heldTrash:setZIndex(4)
                     pawSpr:setImage(pawGrab)
                     PutTrashInPaw()

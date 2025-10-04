@@ -23,7 +23,7 @@ function cQueue.update(trashInStore)
         
         if customer.state == 2 then
             for i,trash in ipairs(trashInStore) do
-                if trash.name == customer.request then
+                if trash.name == customer.request and trash.stage >= trash.minsellstage then
                     CustomerPurchase(i, trash, customer)
                     table.remove(customerQueue, idx)
                     idx -= 1
@@ -69,6 +69,8 @@ end
 
 function cQueue.AddCustomerToQueue(c)
     table.insert(customerQueue, c)
+    print("Adding request: ", c.request)
+    table.insert(truck.cRequests, c.request)
     c:SetMoveTarget(212, 64, 2)
 end
 
@@ -76,6 +78,14 @@ function CustomerStormOff(idx, c)
     print("Customer "..idx.." stormed off")
     table.remove(customerQueue, idx)
     table.insert(customerLeaving, c)
+
+    for i,v in ipairs(truck.cRequests) do
+        if v == c.request then
+            table.remove(truck.cRequests, i)
+            break
+        end
+    end
+
     c:SetMoveTarget(432, 48, 2)
 end
 
@@ -85,6 +95,13 @@ function CustomerPurchase(idx, trash, c)
     table.insert(customerLeaving, c)
     c:SetMoveTarget(432, 48, 2)
     c:SetState(3)
+
+    for i,v in ipairs(truck.cRequests) do
+        if v == trash.name then
+            table.remove(truck.cRequests, i)
+            break
+        end
+    end
 end
 
 function AddScoreBlinkerUI(xPos, yPos, v)
@@ -113,7 +130,7 @@ function AddPawSwiper(trash)
         pawSpr:setScale(-1,1)
     end
     pawSpr:setCenter(0, 0.5)
-    local pawAnim = gfx.animator.new(1000, pawLine, playdate.easingFunctions["inOutQuad"])
+    local pawAnim = gfx.animator.new(600, pawLine, playdate.easingFunctions["inOutQuad"])
     pawAnim.reverses = true
     table.insert(customerPaws, {sprite=pawSpr, anim=pawAnim, targetTrash=trash, grabbed=false})
 end

@@ -12,12 +12,20 @@ for id,_ in pairs(trashdata) do
     table.insert(trashIDs, id)
 end
 
+truck.cRequests = {}
+
 function truck.Init()
     truckTimer = playdate.timer.performAfterDelay(1, truck.Dump)
 end
 
 function truck.Dump()
-    local tName = trashIDs[math.random(#trashIDs)]
+    local tName = trashIDs[1]
+    if #truck.cRequests > 0 and math.random() < 0.75 then
+        tName = truck.cRequests[math.random(#truck.cRequests)]
+    else
+        tName = trashIDs[math.random(#trashIDs)]
+    end
+    tName = "cottoncandy"
 
     local rTrash = trashdata[tName]
     local newTrash = Trash(tName, rTrash)
