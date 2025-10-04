@@ -7,7 +7,7 @@ local gfx <const> = playdate.graphics
 local depot = {}
 
 -- 60
-local speed = 150
+local speed = 60
 local capacity = 4
 local onBelt = 0
 local belt = {}

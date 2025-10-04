@@ -13,6 +13,8 @@ function Trash:init(name, data)
     self.id = nextTrashID
     nextTrashID += 1
     self.value = data["value"] or 1
+    self.mult = 1
+    self.tags = copy(data["tags"])
 
     self.stageCt = data["stages"] or 1
     self.stage   = 1
@@ -28,6 +30,10 @@ function Trash:init(name, data)
     end
     self.sprite:setGroups({3})
     
+    self.vfxAnim = nil
+    self.vfxSpr = gfx.sprite.new()
+    self.vfxSpr:add()
+
     self.rotation = 0
     self.shape = {}
     local shapeData  = nil
@@ -63,6 +69,19 @@ function Trash:init(name, data)
     self.storeTargetR = nil
     self.storeTargetC = nil
     self.storeFallAnimator = nil
+
+    self.storeRow = nil
+    self.storeCol = nil
+
+    self.splashed = false
+end
+
+function Trash:update()
+    if self.vfxAnim then
+        self.vfxSpr:setImage(self.vfxAnim:image())
+        self.vfxSpr:moveTo(self:getPosition())
+        self.vfxSpr:setZIndex(self.sprite:getZIndex())
+    end
 end
 
 function Trash:checkResponse(other)
@@ -84,21 +103,6 @@ function Trash:checkResponse(other)
                     for i=1, newRot, 1 do
                         Rotate90(newShape)
                     end
-                    print(newShape, self.shapeList[newStage])
-                    for i,v in ipairs(self.shapeList[newStage]) do
-                        local debugStr = ""
-                        for _,c in ipairs(v) do
-                            debugStr = debugStr..c
-                        end
-                        print(debugStr)
-                    end
-                    for i,v in ipairs(newShape) do
-                        local debugStr = ""
-                        for _,c in ipairs(v) do
-                            debugStr = debugStr..c
-                        end
-                        print(debugStr)
-                    end
                     return true, newStage, newShape, newCenter, newRot
                 end
             end
@@ -116,11 +120,34 @@ function Trash:SetStage(stage, s, c)
 end
 
 function Trash:Purchased()
-    local sellValue = self.value
+    local sellValue = self.value * self.mult
     if self.name == "cottoncandy" then
         store.SweetenTrash(self.stage)
     end
+
+    for _,tag in ipairs(self.tags) do
+        if tag == "wet" then
+            store.WetTrash(self)
+        elseif tag == "sparky" then
+            print('sparky')
+        end
+    end
+
     return sellValue
+end
+
+local sweetenVFX = gfx.animation.loop.new(150, gfx.imagetable.new("images/sparkle"))
+function Trash:AddEffect(effect)
+    if effect == "sweeten" then
+        self.vfxAnim = sweetenVFX
+        self.mult += 1
+    end
+end
+
+function Trash:Splash()
+    if self.splashed then return end
+    self.splashed = true
+    print("Splashed: "..self.name, self.id)
 end
 
 function Trash:getSprite()
@@ -131,6 +158,7 @@ function Trash:add()
 end
 function Trash:remove()
     self.sprite:remove()
+    self.vfxSpr:remove()
 end
 function Trash:moveTo(x,y)
     self.sprite:moveTo(x,y)

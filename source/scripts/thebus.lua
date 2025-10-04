@@ -8,7 +8,7 @@ local customerdata <const> = assert(json.decodeFile("data/customerdata.json"))
 local busTimer = nil
 
 function bus.Init()
-    --busTimer = playdate.timer.performAfterDelay(1, bus.FerryCustomers, 1)
+    busTimer = playdate.timer.performAfterDelay(1, bus.FerryCustomers, 1)
 end
 
 function bus.FerryCustomers(n)

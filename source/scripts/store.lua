@@ -91,6 +91,7 @@ function store.PlaceTrashRandomly(trash)
             for _,v in ipairs(toChange) do
                 itemMap[v] = trash.id
             end
+            trash.storeRow, trash.storeCol = r, c
             table.insert(trashInStore, trash)
             return true
         end
@@ -101,7 +102,7 @@ end
 
 function store.GetAvailableSpace(trash)
     for i=1,10,1 do
-        local r,c = math.random(1,4), math.random(1,7)
+        local r,c = math.random(1,4), math.random(1,8)
         local toChange, itemAlreadyThere = GetTrashPosOnGrid(trash, r, c)
         
         if itemAlreadyThere == nil and toChange ~= nil then
@@ -164,11 +165,13 @@ function store.PlaceTrash(trash, rot, r, c)
         for _,v in ipairs(toChange) do
             itemMap[v] = trash.id
         end
+
         if newTrash then table.insert(trashInStore, trash) end
     else
         for _,v in ipairs(toChange) do
             itemMap[v] = trash.id
         end
+
         table.insert(trashInStore, trash)
     end
 
@@ -178,7 +181,7 @@ function store.PlaceTrash(trash, rot, r, c)
         if i%8 == 0 then debugStr = debugStr.."\n" end
     end
     print(debugStr)
-    
+    trash.storeRow, trash.storeCol = r, c
     return true, itemToSwap
 end
 
@@ -262,11 +265,85 @@ function ReservoirSample(table, n)
     return returnTable
 end
 
+
+function store.WetTrash(centerTrash)
+    print("WetCenter: ", centerTrash.storeRow, centerTrash.storeCol)
+    local wetZone = copy(centerTrash.shape)
+
+    -- Pad wet zone shape matrix with zeroes
+    local emptyRow = {}
+    for i=1, #wetZone, 1 do table.insert(emptyRow, 0) end
+    table.insert(wetZone, 1, copy(emptyRow))
+    table.insert(wetZone, copy(emptyRow))
+    for _,row in ipairs(wetZone) do
+        table.insert(row, 1, 0)
+        table.insert(row, 0)
+    end
+
+    for i=2, #wetZone-1, 1 do
+        local row = wetZone[i]
+        for j=2, #row-1, 1 do
+            if wetZone[i][j] == 1 then
+                if wetZone[i+1][j] == 0 then wetZone[i+1][j] = 2 end
+                if wetZone[i-1][j] == 0 then wetZone[i-1][j] = 2 end
+                if wetZone[i][j+1] == 0 then wetZone[i][j+1] = 2 end
+                if wetZone[i][j-1] == 0 then wetZone[i][j-1] = 2 end
+            end
+        end
+    end
+
+    for i=1, #wetZone, 1 do
+        local row = wetZone[i]
+        for j=1, #row, 1 do
+            if wetZone[i][j] == 2 then wetZone[i][j] = 1 end
+        end
+    end
+
+    for i=1, #wetZone, 1 do
+        local debugStr = ""
+        local row = wetZone[i]
+        for j=1, #row, 1 do
+            if wetZone[i][j] == 2 then wetZone[i][j] = 1 end
+            debugStr = debugStr..wetZone[i][j].." "
+        end
+        print(debugStr)
+    end
+
+    -- Splash other trash in wet zone
+
+    local w = storeGrid:getNumberOfColumns()
+    local splashedTrashIDs = {}
+    for r,row in ipairs(wetZone) do
+        for c,_ in ipairs(row) do
+            local wR = centerTrash.storeRow + r-1 - (#wetZone // 2) - 1
+            local wC = centerTrash.storeCol + c-1 - (#wetZone // 2) - 1
+            local trashID = itemMap[(wR-1)*w + wC]
+            if trashID ~= nil and trashID ~= 0 then
+                local alreadySplashed = false
+                for _,id in ipairs(splashedTrashIDs) do
+                    if id == trashID then
+                        alreadySplashed = true
+                    end
+                end
+
+                if (not alreadySplashed) then
+                    table.insert(splashedTrashIDs, trashID)
+                    for i,trash in ipairs(trashInStore) do
+                        if trash.id == trashID then
+                            trash:Splash()
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 function store.SweetenTrash(n)
     local targetTrash = ReservoirSample(trashInStore, n)
-    print(#targetTrash)
+    print("Sweetening "..#targetTrash)
     for _,v in ipairs(targetTrash) do
-        print(v.name)
+        v:AddEffect("sweeten")
     end
 end
 
@@ -293,6 +370,10 @@ end
 function store.update()
     cQueue.update(trashInStore)
     --storeGrid:drawInRect(storeX, storeY, 276, 148)
+
+    for _,trash in ipairs(trashInStore) do
+        trash:update()
+    end
 
     local i = 1
 

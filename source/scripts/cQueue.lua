@@ -89,6 +89,7 @@ function CustomerStormOff(idx, c)
     c:SetMoveTarget(432, 48, 2)
 end
 
+-- Scoring is done in UpdateCustomerPaws, when the trash is grabbbed by the paw
 function CustomerPurchase(idx, trash, c)
     store.RemoveTrashFromStore(trash.id, idx)
     AddPawSwiper(trash)

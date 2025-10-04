@@ -14,6 +14,9 @@ import "scripts/thetruck"
 import "scripts/cashregister"
 
 local gfx <const> = playdate.graphics
+local sfx <const> = playdate.sound
+-- Sound
+local landfillAmb = sfx.sampleplayer.new("audio/Ambience Landfill")
 
 local storeBG = gfx.sprite.new(gfx.image.new("images/BGs/storeBG"))
 storeBG:setCenter(0,0)
@@ -48,6 +51,8 @@ function GameStart()
     beltBG:add()
     bordersBG:add()
     gameState = 2
+
+    landfillAmb:play(0)
 end
 
 function playdate.update()

@@ -1,6 +1,9 @@
 cashregister = {}
 
 local gfx <const> = playdate.graphics
+local sfx <const> = playdate.sound
+
+local scoreSFX = sfx.sampleplayer.new("audio/Cash Register Ding")
 
 local money = 0
 
@@ -16,6 +19,7 @@ function cashregister.score(n)
         mult += 0.2
     end
     money += n*mult
+    scoreSFX:play()
 end
 
 function cashregister.update()
