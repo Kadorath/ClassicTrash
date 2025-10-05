@@ -79,13 +79,6 @@ function CustomerStormOff(idx, c)
     table.remove(customerQueue, idx)
     table.insert(customerLeaving, c)
 
-    for i,v in ipairs(truck.cRequests) do
-        if v == c.request then
-            table.remove(truck.cRequests, i)
-            break
-        end
-    end
-
     c:SetMoveTarget(432, 48, 2)
 end
 
@@ -118,7 +111,7 @@ end
 function AddPawSwiper(trash)
     -- Initialize paw sprite
     local pawSpr = gfx.sprite.new(customerPawImg)
-    pawSpr:setZIndex(3)
+    pawSpr:setZIndex(RenderLayer.PAWS)
     pawSpr:add()
 
     -- Set up paw movement animator
@@ -141,10 +134,12 @@ function UpdateCustomerPaws()
         customerPaws[i].sprite:moveTo(customerPaws[i].anim:currentValue())
         if customerPaws[i].grabbed then
             customerPaws[i].targetTrash.sprite:moveTo(customerPaws[i].sprite:getPosition())
+            customerPaws[i].targetTrash:update()
         end
         if not customerPaws[i].grabbed and 
           math.abs(customerPaws[i].sprite.x - customerPaws[i].targetTrash.sprite.x) < 4 then
             customerPaws[i].grabbed = true
+            customerPaws[i].targetTrash:setZIndex(RenderLayer.CTRASH)
             local sellValue = customerPaws[i].targetTrash:Purchased()
             local xPos, yPos = customerPaws[i].targetTrash:getPosition()
             AddScoreBlinkerUI(xPos, yPos-24, sellValue)

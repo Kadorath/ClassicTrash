@@ -2,8 +2,7 @@
     "rodent": {
         "name": "Rodent",
         "img": "customer1",
-        "wantsd":  ["boot", "bannanapeel", "fishbones", "umbrella", "tv"],
-        "wants": ["fishbones"],
+        "wants":  ["boot", "bannanapeel", "fishbones", "umbrella", "tv"],
         "patience": 600
     }
 }

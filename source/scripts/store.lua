@@ -35,17 +35,6 @@ for i=1,storeGrid:getNumberOfColumns(),1 do
     end
 end
 
--- local bgNineSlice = gfx.nineSlice.new("images/storebg", 16, 16, 32, 32)
--- local bgImg = gfx.image.new(276,148)
--- gfx.pushContext(bgImg)
--- bgNineSlice:drawInRect(0,0,276,148)
--- gfx.popContext()
--- local bgSpr = gfx.sprite.new(bgImg)
--- bgSpr:setCenter(0,0)
--- bgSpr:setZIndex(1)
--- bgSpr:moveTo(storeX-12, storeY-12)
--- bgSpr:add()
-
 -- Store grid functions
 function store.UpdatePosition(dX,dY)
     storeGrid.needsDisplay = true
@@ -126,6 +115,7 @@ function store.DropIntoStore(trash, targetR, targetC)
     trash:SetStoreFallAnimator(targetR, targetC)
     trash:setRotation(0)
     trash:setScale(1)
+    trash:setZIndex(RenderLayer.FTRASH)
     trash:setCenter(trash.center[1], trash.center[2])
     table.insert(fallingTrash, trash)
 end
@@ -395,7 +385,7 @@ function store.update()
                 if v == t then
                     table.remove(fallingTrash, idx)
                     i -= 1
-                    t:setZIndex(2)
+                    t:setZIndex(RenderLayer.STRASH)
                     store.PlaceTrash(t, 1, t.storeTargetR, t.storeTargetC)
                     break
                 end

@@ -45,7 +45,7 @@ function conveyor.update()
                 print("found available space")
                 store.ReserveSpace(toIncineratorItem, 1, r, c)
                 toIncineratorItem:setStoreTarget(r,c)
-                toIncineratorItem:setZIndex(4)
+                toIncineratorItem:setZIndex(RenderLayer.BTRASH)
                 store.DropIntoStore(toIncineratorItem,x,y)
                 toIncineratorItem = nil
             end
@@ -72,7 +72,7 @@ function conveyor.AddToBelt(trash, idx)
     end
 
     trash:moveTo(beltX,0)
-    trash:setZIndex(2)
+    trash:setZIndex(RenderLayer.BTRASH)
     trash:setScale(0.5)
     trash:setRotation(math.random(1,360))
 
@@ -128,7 +128,7 @@ function conveyor.TakeFromBelt(trashToSwap)
     if trashToSwap then
         trashToSwap:setScale(0.5)
         trashToSwap:setCenter(0.5,0.5)
-        trashToSwap:setZIndex(2)
+        trashToSwap:setZIndex(RenderLayer.HTRASH)
         trashToSwap:SetBeltPosition(beltX, beltY + (selection+lagAdjust)*32, 0)
         onBelt += 1 
     end

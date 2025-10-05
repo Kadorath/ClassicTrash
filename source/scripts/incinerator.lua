@@ -43,6 +43,7 @@ end
 function incinerator.update()
     --gfx.drawRect(incinX, incinY, incinW, incinH)
     for _,trash in ipairs(trashBag) do
+        trash:update()
         trash:updateVelocity(0,g)
         local x,y = trash:getPosition()
         trash:incineratorCollision(

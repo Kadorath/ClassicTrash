@@ -16,5 +16,5 @@ function bus.FerryCustomers(n)
         playdate.timer.performAfterDelay(i*500, cQueue.AddCustomerToQueue, Customer(customerdata["rodent"], -48, 64))
     end
 
-    busTimer = playdate.timer.performAfterDelay(17500, bus.FerryCustomers, math.random(5))
+    busTimer = playdate.timer.performAfterDelay(12500, bus.FerryCustomers, math.random(5))
 end

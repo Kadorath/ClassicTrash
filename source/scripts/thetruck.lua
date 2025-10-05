@@ -21,12 +21,12 @@ end
 function truck.Dump()
     local tName = trashIDs[1]
     if #truck.cRequests > 0 and math.random() < 0.75 then
-        tName = truck.cRequests[math.random(#truck.cRequests)]
+        local rId = math.random(#truck.cRequests)
+        tName = truck.cRequests[rId]
+        table.remove(truck.cRequests, rId)
     else
         tName = trashIDs[math.random(#trashIDs)]
     end
-    tName = "fishbones"
-    if math.random() < 0.75 then tName = "cottoncandy" end
 
     local rTrash = trashdata[tName]
     local newTrash = Trash(tName, rTrash)

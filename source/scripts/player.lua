@@ -2,7 +2,7 @@ import "scripts/conveyor"
 import "scripts/store"
 import "scripts/incinerator"
 import "scripts/cQueue"
-
+import "main"
 player = {}
 
 local gfx <const> = playdate.graphics
@@ -24,7 +24,7 @@ local pawGrab = gfx.image.new("images/paw-grab")
 local pawSpr  = gfx.sprite.new(pawOpen)
 
 local x,y = conveyor.UpdateSelection(0)
-pawSpr:setZIndex(100)
+pawSpr:setZIndex(RenderLayer.PLAYER)
 pawSpr:moveTo(x,y)
 pawSpr:add()
 
@@ -54,6 +54,8 @@ function player.update()
     end
     lastDPadInput = curDPadInput
 
+    if heldTrash then heldTrash:update() end
+
     -- Paw over Conveyor Belt
     if section == 1 then
         if playdate.buttonJustPressed(playdate.kButtonUp) then
@@ -75,7 +77,7 @@ function player.update()
             heldTrash = nil
             rotation = 1
             if newTrash then 
-                newTrash:setZIndex(5)
+                newTrash:setZIndex(RenderLayer.HTRASH)
                 heldTrash = newTrash
                 pawSpr:setImage(pawGrab)
                 PutTrashInPaw()
@@ -102,6 +104,7 @@ function player.update()
                 local _,r,_ = store.GetSelection()
                 x,y = conveyor.SetSelection(r)
                 MovePaw(x,y)
+                if heldTrash then heldTrash:setZIndex(RenderLayer.HTRASH) end
                 section -= 1
             end
         elseif playdate.buttonJustPressed(playdate.kButtonLeft) or 
@@ -120,10 +123,10 @@ function player.update()
                 local placed, swappedItem = store.PlaceTrash(heldTrash, rotation)
                 if placed then
                     placeSFX:play(1)
-                    heldTrash:setZIndex(2)
+                    heldTrash:setZIndex(RenderLayer.STRASH)
                     heldTrash = swappedItem
                     if heldTrash then
-                        heldTrash:setZIndex(4)
+                        heldTrash:setZIndex(RenderLayer.HTRASH)
                     else
                         pawSpr:setImage(pawOpen)
                     end
@@ -137,7 +140,7 @@ function player.update()
                 if pickup then
                     heldTrash = pickup
                     print("Picked Up: ", heldTrash.name, heldTrash.rotation)
-                    heldTrash:setZIndex(4)
+                    heldTrash:setZIndex(RenderLayer.HTRASH)
                     pawSpr:setImage(pawGrab)
                     PutTrashInPaw()
                 end
@@ -178,7 +181,7 @@ function playdate.BButtonHeld()
     if heldTrash then
         if not incinerator.IsFull() then
             heldTrash:setCenter(0.5, 0.5)
-            heldTrash:setZIndex(2)
+            heldTrash:setZIndex(RenderLayer.BTRASH)
             heldTrash:setScale(0.5)
             incinerator.AddToIncinerator(heldTrash)
             heldTrash = nil
