@@ -13,8 +13,8 @@ function Trash:init(name, data)
     self.id = nextTrashID
     nextTrashID += 1
     self.value = data["value"] or 1
-    self.mult = 1
-    self.tags = copy(data["tags"])
+    self.bonus = 1
+    self.tags = copy(data["tags"]) or {}
 
     self.stageCt = data["stages"] or 1
     self.stage   = 1
@@ -73,7 +73,15 @@ function Trash:init(name, data)
     self.storeRow = nil
     self.storeCol = nil
 
+    -- Effects
     self.splashed = false
+    for _,tag in ipairs(self.tags) do
+        if tag == "smelly" then
+            self:AddEffect("smelly")
+        elseif tag == "wet" then
+            self:AddEffect("wet")
+        end
+    end
 end
 
 function Trash:update()
@@ -120,7 +128,7 @@ function Trash:SetStage(stage, s, c)
 end
 
 function Trash:Purchased()
-    local sellValue = self.value * self.mult
+    local sellValue = (self.value + self.bonus)
     if self.name == "cottoncandy" then
         store.SweetenTrash(self.stage)
     end
@@ -139,10 +147,16 @@ function Trash:Purchased()
 end
 
 local sweetenVFX = gfx.animation.loop.new(150, gfx.imagetable.new("images/sparkle"))
+local smellyVFX = gfx.animation.loop.new(150, gfx.imagetable.new("images/smelly"))
+local wetVFX = gfx.animation.loop.new(150, gfx.imagetable.new("images/wet"))
 function Trash:AddEffect(effect)
     if effect == "sweeten" then
         self.vfxAnim = sweetenVFX
-        self.mult += 1
+        self.bonus += 1
+    elseif effect == "smelly" then
+        self.vfxAnim = smellyVFX
+    elseif effect == "wet" then
+        self.vfxAnim = wetVFX
     end
 end
 

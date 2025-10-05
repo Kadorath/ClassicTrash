@@ -17,6 +17,7 @@ local gfx <const> = playdate.graphics
 local sfx <const> = playdate.sound
 -- Sound
 local landfillAmb = sfx.sampleplayer.new("audio/Ambience Landfill")
+local gameplayBGM = sfx.sampleplayer.new("audio/inmytrash")
 
 -- STRASH = Store Trash
 -- CTRASH = Customer Trash
@@ -78,6 +79,7 @@ function GameStart()
     gameState = 2
 
     landfillAmb:play(0)
+    gameplayBGM:play(0)
 end
 
 function playdate.update()

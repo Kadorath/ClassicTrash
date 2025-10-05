@@ -3,14 +3,14 @@
         "img": "umbrella",
         "shape": [[0,1,0],[0,1,0],[0,1,0]],
         "center": [0.5,0.5],
-        "value": 4
+        "value": 1
     },
     "tv": {
         "tags": ["sparky"],
         "img": "tv",
         "shape": [[0,1,0],[0,1,1],[0,1,1]],
         "center": [0.25,0.5],
-        "value": 8
+        "value": 1
     },
     "bannanapeel": {
         "img": "bannanapeel",
@@ -22,7 +22,7 @@
         "img": "fishbones",
         "shape": [[0,0,0],[0,1,1],[0,0,0]],
         "center": [0.25,0.5],
-        "value": 2
+        "value": 1
     },
     "boot": {
         "tags": ["smelly"],

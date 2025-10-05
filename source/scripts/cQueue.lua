@@ -8,7 +8,7 @@ local customerQueue   = {}
 local customerLeaving = {}
 local queueRect = playdate.geometry.rect.new(98, 58, 212, 16)
 
-local scoreBlinkerAnim = gfx.animation.blinker.new(300, 50, true)
+local scoreBlinkerAnim = gfx.animation.blinker.new(400, 100, true)
 scoreBlinkerAnim:start()
 local scoreBlinkers = {}
 
@@ -98,12 +98,24 @@ function CustomerPurchase(idx, trash, c)
     end
 end
 
+local score500Img = gfx.image.new("images/ScoreUI/500")
+local score1000Img = gfx.image.new("images/ScoreUI/1000")
+local score1500Img = gfx.image.new("images/ScoreUI/1500")
+local score2000Img = gfx.image.new("images/ScoreUI/2000")
+local score50Img = gfx.image.new("images/ScoreUI/50")
+local scoreImgs = { score500Img, score1000Img, score1500Img, score2000Img, score50Img }
 function AddScoreBlinkerUI(xPos, yPos, v)
+    local scoreImg = scoreImgs[v] or score50Img
+    local blinkerSpr = gfx.sprite.new(scoreImg)
+    blinkerSpr:setCenter(0.75,0.5)
+    blinkerSpr:setZIndex(RenderLayer.HTRASH)
+    blinkerSpr:add()
     local newBlinkerUI = {
+        sprite = blinkerSpr,
         score = v,
         x = xPos,
         y = yPos,
-        ttl = 1
+        ttl = 1.5
     }
     table.insert(scoreBlinkers, newBlinkerUI)
 end
@@ -142,8 +154,11 @@ function UpdateCustomerPaws()
             customerPaws[i].targetTrash:setZIndex(RenderLayer.CTRASH)
             local sellValue = customerPaws[i].targetTrash:Purchased()
             local xPos, yPos = customerPaws[i].targetTrash:getPosition()
+            local plus50s = cashregister.score(sellValue)
+            for i=1, plus50s, 1 do
+                AddScoreBlinkerUI(xPos + math.random(-30,30), yPos+math.random(-10,5), 5)
+            end
             AddScoreBlinkerUI(xPos, yPos-24, sellValue)
-            cashregister.score(sellValue)
         end
 
         if customerPaws[i].anim:ended() then
@@ -156,13 +171,12 @@ end
 
 function UpdateScoreUI()
     for i=#scoreBlinkers, 1, -1 do
-        if scoreBlinkerAnim.on then
-            gfx.setColor(gfx.kColorBlack)
-            gfx.drawText(scoreBlinkers[i].score, scoreBlinkers[i].x, scoreBlinkers[i].y)
-        end
+        scoreBlinkers[i].sprite:moveTo(scoreBlinkers[i].x, scoreBlinkers[i].y)
+        scoreBlinkers[i].sprite:setVisible(scoreBlinkerAnim.on)
         scoreBlinkers[i].ttl -= deltaTime
         scoreBlinkers[i].y -= 0.25
         if scoreBlinkers[i].ttl <= 0 then
+            scoreBlinkers[i].sprite:remove()
             table.remove(scoreBlinkers, i)
         end
     end
