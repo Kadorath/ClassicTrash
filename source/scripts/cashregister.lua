@@ -38,7 +38,7 @@ function cashregister.update()
         combo = false
         mult = 0
     end
-    gfx.drawText(mult, 120, 12)
+    -- gfx.drawText(mult, 120, 12)
 end
 
 function cashregister.GetMoney()

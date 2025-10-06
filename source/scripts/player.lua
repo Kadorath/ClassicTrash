@@ -7,13 +7,15 @@ player = {}
 
 local gfx <const> = playdate.graphics
 
-local lastDPadInput        = 0
+local lastDPadInput    = 0
 local btnHold          = 0
 local btnHoldThreshold = 20
 local btnHoldRate      = 2
 local btnHoldRateCt    = btnHoldRate
 
+local holdTimeToTrash = 0.25
 local bBtnHeld = false
+local bBtnHoldTime = 0
 
 local moveSFX  = playdate.sound.sampleplayer.new("audio/UIMove")
 local errorSFX = playdate.sound.sampleplayer.new("audio/Error")
@@ -148,6 +150,12 @@ function player.update()
         end
     end
 
+    if playdate.buttonIsPressed(playdate.kButtonB) then
+        bBtnHoldTime += deltaTime
+        if bBtnHoldTime > holdTimeToTrash then
+            BBtnHeld()
+        end
+    end
     if playdate.buttonJustReleased(playdate.kButtonB) then
         if heldTrash and not bBtnHeld then
             print('rotating')
@@ -158,6 +166,7 @@ function player.update()
             PutTrashInPaw()
         end
 
+        bBtnHoldTime = 0
         bBtnHeld = false
     end
 end
@@ -177,7 +186,7 @@ function PutTrashInPaw()
     end
 end
 
-function playdate.BButtonHeld()
+function BBtnHeld()
     if heldTrash then
         if not incinerator.IsFull() then
             heldTrash:setCenter(0.5, 0.5)

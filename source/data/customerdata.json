@@ -1,7 +1,7 @@
 {
     "rodent": {
         "name": "Rodent",
-        "img": "customer1",
+        "img": "Customer-Cat",
         "wants":  ["boot", "bannanapeel", "fishbones", "umbrella", "tv"],
         "patience": 600
     }

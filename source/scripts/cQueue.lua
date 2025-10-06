@@ -6,7 +6,7 @@ local gfx <const> = playdate.graphics
 
 local customerQueue   = {}
 local customerLeaving = {}
-local queueRect = playdate.geometry.rect.new(98, 58, 212, 16)
+local queueRect = playdate.geometry.rect.new(180, 58, 112, 16)
 
 local scoreBlinkerAnim = gfx.animation.blinker.new(400, 100, true)
 scoreBlinkerAnim:start()
@@ -25,8 +25,7 @@ function cQueue.update(trashInStore)
             for i,trash in ipairs(trashInStore) do
                 if trash.name == customer.request and trash.stage >= trash.minsellstage then
                     CustomerPurchase(i, trash, customer)
-                    table.remove(customerQueue, idx)
-                    idx -= 1
+                    customer:SetState(4)
                     break
                 end
             end
@@ -34,15 +33,27 @@ function cQueue.update(trashInStore)
             customer.patience -= 1
             if customer.patience <= 0 then
                 CustomerStormOff(idx, customer)
-                idx -= 1
             end
         end
 
         customer:update()
 
-        if customer.moveDir.dx == 0 and customer.moveDir.dy == 0 then
-            customer:SetMoveTarget(math.random(queueRect.x, queueRect.x+queueRect.w), 
-                                   math.random(queueRect.y, queueRect.y+queueRect.h), 0.5)
+        if customer.state == 2 and customer.idleTime <= 0 then
+            customer:SetState(1)
+            customer:SetMoveTarget(math.min(math.max(queueRect.x, customer.sprite.x+math.random(-25, 25)), queueRect.x+queueRect.w), 
+                                   math.min(math.max(queueRect.y, customer.sprite.y+math.random(-25, 25)), queueRect.y+queueRect.h), 0.5)
+        end
+
+        if customer.state == 4 and customer.moveDir.x == 0 and customer.moveDir.y == 0 then
+            customer:SetState(5)
+            break
+        end
+        if customer.state == 5 and customer.idleTime <= 0 then
+            customer:SetState(3)
+            table.remove(customerQueue, idx)
+            table.insert(customerLeaving, customer)
+            customer:SetMoveTarget(432, 48, 1.5)
+            break
         end
 
         idx += 1
@@ -64,21 +75,22 @@ function cQueue.update(trashInStore)
     UpdateCustomerPaws()
     UpdateScoreUI()
 
-    gfx.drawRect(queueRect)
+    -- gfx.drawRect(queueRect)
 end
 
 function cQueue.AddCustomerToQueue(c)
     table.insert(customerQueue, c)
     print("Adding request: ", c.request)
     table.insert(truck.cRequests, c.request)
-    c:SetMoveTarget(212, 64, 2)
+    c:SetMoveTarget(math.random(queueRect.x, queueRect.x+queueRect.w), 
+                    math.random(queueRect.y, queueRect.y+queueRect.h))
 end
 
 function CustomerStormOff(idx, c)
     print("Customer "..idx.." stormed off")
     table.remove(customerQueue, idx)
     table.insert(customerLeaving, c)
-
+    c:SetState(3)
     c:SetMoveTarget(432, 48, 2)
 end
 
@@ -86,9 +98,6 @@ end
 function CustomerPurchase(idx, trash, c)
     store.RemoveTrashFromStore(trash.id, idx)
     AddPawSwiper(trash)
-    table.insert(customerLeaving, c)
-    c:SetMoveTarget(432, 48, 2)
-    c:SetState(3)
 
     for i,v in ipairs(truck.cRequests) do
         if v == trash.name then
