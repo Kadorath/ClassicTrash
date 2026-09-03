@@ -3,32 +3,39 @@
         "img": "umbrella",
         "shape": [[0,1,0],[0,1,0],[0,1,0]],
         "center": [0.5,0.5],
-        "value": 1
+        "value": 1,
+        "bagCount": 1
     },
     "tv": {
         "tags": ["sparky"],
         "img": "tv",
         "shape": [[0,1,0],[0,1,1],[0,1,1]],
         "center": [0.25,0.5],
-        "value": 1
+        "value": 1,
+        "bagCount": 1
     },
     "bannanapeel": {
         "img": "bannanapeel",
         "shape": [[0,0,0],[0,1,0],[0,0,0]],
-        "center": [0.5,0.5]
+        "center": [0.5,0.5],
+        "value": 1,
+        "bagCount": 2
     },
     "fishbones": {
         "tags": ["wet"],
         "img": "fishbones",
         "shape": [[0,0,0],[0,1,1],[0,0,0]],
         "center": [0.25,0.5],
-        "value": 1
+        "value": 1,
+        "bagCount": 1
     },
     "boot": {
         "tags": ["smelly"],
         "img": "boot",
         "shape": [[0,1,0],[0,1,1],[0,0,0]],
-        "center": [0.25,0.75]
+        "center": [0.25,0.75],
+        "value": 1,
+        "bagCount": 1
     },
 
     "cottoncandy": {
@@ -45,7 +52,8 @@
         "center": [[0.5,0.5], [0.5,0.85], [0.5,0.85], [0.5,0.85]],
         "response": {
             "cottoncandy": "stack"
-        }
+        },
+        "bagCount": 2
     },
 
 
@@ -54,6 +62,7 @@
         "img": "ActualGarbage/diamond",
         "value": -1,
         "shape": [[0,0,0],[0,1,0],[0,0,0]],
-        "center": [0.5, 0.5]
+        "center": [0.5, 0.5],
+        "bagCount": 1
     }
 }

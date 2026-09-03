@@ -38,9 +38,53 @@ function cashregister.update()
         combo = false
         mult = 0
     end
+
+    UpdateScoreUI()
     -- gfx.drawText(mult, 120, 12)
 end
 
 function cashregister.GetMoney()
     return money
+end
+
+
+local scoreBlinkerAnim = gfx.animation.blinker.new(500, 150, true)
+scoreBlinkerAnim:start()
+local scoreBlinkers = {}
+
+local score500Img = gfx.image.new("images/ScoreUI/500")
+local score1000Img = gfx.image.new("images/ScoreUI/1000")
+local score1500Img = gfx.image.new("images/ScoreUI/1500")
+local score2000Img = gfx.image.new("images/ScoreUI/2000")
+local score50Img = gfx.image.new("images/ScoreUI/50")
+local scoreImgs = { score500Img, score1000Img, score1500Img, score2000Img, score50Img }
+function cashregister.AddScoreBlinkerUI(xPos, yPos, v)
+    local scoreImg = scoreImgs[v] or score50Img
+    local blinkerSpr = gfx.sprite.new(scoreImg)
+    blinkerSpr:setCenter(0.75,0.5)
+    blinkerSpr:setZIndex(RenderLayer.HTRASH)
+    blinkerSpr:add()
+    local newBlinkerUI = {
+        sprite = blinkerSpr,
+        score = v,
+        x = xPos,
+        y = yPos,
+        ttl = 1.25
+    }
+    table.insert(scoreBlinkers, newBlinkerUI)
+end
+
+function UpdateScoreUI()
+    for i=#scoreBlinkers, 1, -1 do
+        scoreBlinkers[i].sprite:moveTo(scoreBlinkers[i].x, scoreBlinkers[i].y)
+        if (scoreBlinkers[i].score == 5) then
+            scoreBlinkers[i].sprite:setVisible(scoreBlinkerAnim.on)
+        end
+        scoreBlinkers[i].ttl -= deltaTime
+        scoreBlinkers[i].y -= 0.25
+        if scoreBlinkers[i].ttl <= 0 then
+            scoreBlinkers[i].sprite:remove()
+            table.remove(scoreBlinkers, i)
+        end
+    end
 end

@@ -17,7 +17,8 @@ for i=1, capacity, 1 do
     table.insert(oldBelt, -1)
 end
 
-local toIncineratorItem = nil
+local pushedOffBeltItem = nil
+local dropTarget_R,dropTarget_C,dropTarget_X,dropTarget_Y
 
 local selection = 1
 local lagTime = 10
@@ -34,29 +35,42 @@ function conveyor.update()
             trash:UpdateBeltPosition()
         end
     end
-    if toIncineratorItem then
-        if toIncineratorItem:UpdateBeltPosition() then
-            -- if not incinerator.IsFull() and elapsedFrames > lagTime then
-            --     incinerator.AddToIncinerator(toIncineratorItem)
-            --     toIncineratorItem = nil
-            -- end
-            local r,c,x,y = store.GetAvailableSpace(toIncineratorItem)
-            if r ~= nil then
-                print("found available space")
-                store.ReserveSpace(toIncineratorItem, 1, r, c)
-                toIncineratorItem:setStoreTarget(r,c)
-                toIncineratorItem:setZIndex(RenderLayer.BTRASH)
-                store.DropIntoStore(toIncineratorItem,x,y)
-                toIncineratorItem = nil
-            end
+    if pushedOffBeltItem ~= nil then
+        if pushedOffBeltItem:UpdateBeltPosition() and dropTarget_R ~= nil then
+            pushedOffBeltItem:setStoreTarget(dropTarget_R, dropTarget_C)
+            pushedOffBeltItem:setZIndex(RenderLayer.BTRASH)
+
+            store.DropIntoStore(pushedOffBeltItem, dropTarget_X, dropTarget_Y)
+            pushedOffBeltItem = nil
+            dropTarget_R = nil
         end
     end
 
     elapsedFrames += 1
-    if #depot > 0 and elapsedFrames >= speed and 
-        (toIncineratorItem == nil or onBelt < capacity-1) then
-        conveyor.AddToBelt(table.remove(depot))
-        elapsedFrames = 0
+    -- Every speed ticks elapsed, when there are items to push
+    if #depot > 0 and elapsedFrames >= speed then
+        -- Belt is not full yet, push item onto belt
+        if (onBelt < capacity) then
+            print("CONVEYOR: Adding item to belt")
+            conveyor.AddToBelt(table.remove(depot))
+            elapsedFrames = 0
+        elseif (onBelt == capacity and pushedOffBeltItem == nil) then
+            print("CONVEYOR: Belt at capacity, trying to push off belt")
+            dropTarget_R,dropTarget_C,dropTarget_X,dropTarget_Y = store.GetAvailableSpace(belt[capacity])
+            if (dropTarget_R ~= nil and dropTarget_C ~= nil) then
+                conveyor.AddToBelt(table.remove(depot))
+                store.ReserveSpace(pushedOffBeltItem, 1, dropTarget_R, dropTarget_C)
+                elapsedFrames = 0
+            else
+                -- Rechecks slightly more often. Perhaps make this just check immediately when
+                -- an item is removed from the store?
+                elapsedFrames = 45
+            end
+        end
+    end
+
+    if #depot == 0 then
+        truck.Dump()
     end
 end
 
@@ -64,35 +78,44 @@ function conveyor.AddToDepot(trash)
     table.insert(depot, 1, trash)
 end
 
-function conveyor.AddToBelt(trash, idx)
-    idx = idx or 1
-
+-- Add a new item onto the conveyor belt
+function conveyor.AddToBelt(trash)
+    -- Store the belt before the new trash is added in oldBelt
     for i,v in ipairs(belt) do
         oldBelt[i] = v
     end
 
+    -- Position trash sprite
     trash:moveTo(beltX,0)
     trash:setZIndex(RenderLayer.BTRASH)
     trash:setScale(0.5)
     trash:setRotation(math.random(1,360))
 
+    -- Each item on the belt advances one belt slot forward, starting with 
+    -- the trash being added.
     local oldItem = trash
     for i,v in ipairs(belt) do
         oldItem:SetBeltPosition(beltX, beltY + i*32, 400)
         belt[i] = oldItem
         oldItem = v
+        -- If the next item on the belt is an empty space (-1), stop pushing trash forward
         if oldItem == -1 then
             break
         end
     end
 
+    -- Now that trash has its positions set, add to sprite render list
     trash:add()
+
+    -- If we've pushed all trash that should be pushed forward, and we still have an
+    -- item stored in oldItem, then oldItem should be pushed off of the belt.
     if oldItem ~= -1 then
         oldItem:SetBeltPosition(beltX, 262, 400)
-        toIncineratorItem = oldItem
+        pushedOffBeltItem = oldItem
         onBelt -= 1
     end
 
+    -- Item has been added to belt, track accordingly
     onBelt += 1
     needsDisplay = true
 end
@@ -139,24 +162,26 @@ function conveyor.TakeFromBelt(trashToSwap)
             belt[selection+lagAdjust] = trashToSwap or -1
             selectedTrash:setScale(1)
             selectedTrash:setCenter(selectedTrash.center[1], selectedTrash.center[2])
+            onBelt -= 1
         else
-            selectedTrash = toIncineratorItem
-            toIncineratorItem = trashToSwap
-
+            selectedTrash = pushedOffBeltItem
+            pushedOffBeltItem = trashToSwap
+            dropTarget_R = nil
             if selectedTrash then
                 selectedTrash:setScale(1)
                 selectedTrash:setCenter(selectedTrash.center[1], selectedTrash.center[2])
             end
+
+            store.UnreserveSpace(selectedTrash)
         end
-        onBelt -= 1
     elseif trashToSwap then
         if selection+lagAdjust <= capacity then
             belt[selection+lagAdjust] = trashToSwap
         else
-            if toIncineratorItem then
-                selectedTrash = toIncineratorItem
+            if pushedOffBeltItem then
+                selectedTrash = pushedOffBeltItem
             end
-            toIncineratorItem = trashToSwap
+            pushedOffBeltItem = trashToSwap
         end
     end
 

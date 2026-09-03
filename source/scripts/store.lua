@@ -2,6 +2,9 @@ import "CoreLibs/ui"
 import "CoreLibs/nineslice"
 
 import "scripts/cQueue"
+import "scripts/request"
+
+import "main"
 
 store = {}
 
@@ -11,22 +14,64 @@ local gfx <const> = playdate.graphics
 local itemMap = {}
 local trashInStore = {}
 local fallingTrash = {}
+local fallingOffBoard = {}
+local goals = {}
 
+store.rows = 4
+store.columns = 8
 local storeX, storeY = 64,81
 local storeGrid = playdate.ui.gridview.new(32,32)
-storeGrid:setNumberOfColumns(8)
-storeGrid:setNumberOfRowsInSection(1,4)
+storeGrid:setNumberOfColumns(store.columns)
+storeGrid:setNumberOfRowsInSection(1,store.rows)
 storeGrid:setSelection(0,0,0)
 
+local storeFXImg = gfx.image.new(400, 240)
+local storeFXSpr = gfx.sprite.new(storeFXImg)
+storeFXSpr:setCenter(0,0)
+storeFXSpr:moveTo(0,0)
+storeFXSpr:setZIndex(RenderLayer.STRASH)
+
 function storeGrid:drawCell(section, row, column, selected, x, y, width, height)
-    gfx.setColor(gfx.kColorBlack)
-    if selected then gfx.setLineWidth(3)
-    else gfx.setLineWidth(1) end
-    if itemMap[(row-1)*8 + column] == 0 then
-        gfx.drawRect(x,y,width,height)
-    else
-        gfx.fillRect(x,y,width,height)
+    -- Draw borders around the goal shape
+    local m = storeGrid:getNumberOfColumns()
+    local ind = (row-1)*m + column
+    for _,goal in pairs(goals) do
+        local goalMap = goal.map
+        if goalMap[ind] == 1 then
+            gfx.setDitherPattern(0.8, gfx.image.kDitherTypeDiagonalLine)
+            gfx.fillRect(x,y,width,height)
+            
+            gfx.setColor(gfx.kColorBlack)
+            -- Right
+            if ind+1 <= #goalMap and goalMap[ind+1] == 0 then
+                gfx.drawLine(x+width, y, x+width, y+height)
+            end
+            -- Left
+            if ind-1 > 0 and goalMap[ind-1] == 0 then
+                gfx.drawLine(x, y, x, y+height)
+            end
+            -- Down
+            if ind+m <= #goalMap and goalMap[ind+m] == 0 then
+                gfx.drawLine(x, y+height, x+width, y+height)
+            end
+            -- Up
+            if ind-m > 0 and goalMap[ind-m] == 0 then
+                gfx.drawLine(x, y, x+width, y)
+            end
+        end
     end
+
+    if itemMap[ind] < 0 then
+        gfx.setDitherPattern(0.5, gfx.image.kDitherTypeBayer8x8)
+        gfx.fillCircleAtPoint(x+width/2, y+height/2, 12)
+    end
+
+    -- Divide the entire store into a grid
+    -- if itemMap[(row-1)*8 + column] == 0 then
+    --     gfx.drawRect(x,y,width,height)
+    -- else
+    --     gfx.fillRect(x,y,width,height)
+    -- end
 end
 
 for i=1,storeGrid:getNumberOfColumns(),1 do
@@ -35,9 +80,84 @@ for i=1,storeGrid:getNumberOfColumns(),1 do
     end
 end
 
+
+function CreateRandomStoreGoal(size)
+    size = size or 1
+    local newGoal = Request(size)
+    table.insert(goals, newGoal)
+end
+
+function CheckStoreGoals()
+    local i = 1
+    while i <= #goals do
+        local goal = goals[i]
+        local goalMet = true
+
+        local trashIDs = {}
+        for pos,v in ipairs(goal.map) do
+            if v ~= 0 then
+                if itemMap[pos] == 0 then
+                    goalMet = false
+                    break
+                else
+                    -- If the trash has the "garbage" tag, it is not eligible to complete a goal
+                    for k,trash in pairs(trashInStore) do
+                        if trash.id == itemMap[pos] and trash.tags ~= nil then
+                            for _,tag in ipairs(trash.tags) do
+                                if tag == "garbage" then
+                                    goalMet = false
+                                    break
+                                end
+                            end
+                        end
+                    end
+
+                    -- There is valid trash in this position, so record its ID
+                    trashIDs[itemMap[pos]] = 1
+                end
+            end
+        end
+
+        -- Check all of the recorded IDs. If any of them have positions outside of the goal zone,
+        -- the goal is not met
+        for pos,id in ipairs(itemMap) do
+            if goal.map[pos] == 0 then
+                if trashIDs[id] ~= nil then
+                    goalMet = false
+                    break
+                end
+            end
+        end
+
+        if goalMet then
+            for id,_ in pairs(trashIDs) do
+                print("Getting trash ID", id)
+                for k,trash in pairs(trashInStore) do
+                    if trash.id == id then
+                        CustomerPurchase(k, trash)
+                        break
+                    end
+                end
+            end
+
+            
+            table.remove(goals, i)
+            i -= 1
+            storeGrid.needsDisplay = true
+            -- Goal completed. If conditions is met to generate new goals, do that after a delay
+            if (#goals == 0) then
+                playdate.timer.performAfterDelay(2000, function()
+                    CreateRandomStoreGoal(math.random(1, 2))
+                    storeGrid.needsDisplay = true
+                end)
+            end
+        end
+        i += 1
+    end
+end
+
 -- Store grid functions
 function store.UpdatePosition(dX,dY)
-    storeGrid.needsDisplay = true
     local s,r,c = storeGrid:getSelection()
     
     if c+dX > 8 then
@@ -109,10 +229,23 @@ function store.ReserveSpace(trash, rot, r, c)
             itemMap[v] = -trash.id
         end
     end
+
+    storeGrid.needsDisplay = true
+    print("Reserved Space")
+    PrintStoreGrid()
 end
 
-function store.DropIntoStore(trash, targetR, targetC)
-    trash:SetStoreFallAnimator(targetR, targetC)
+function store.UnreserveSpace(trash)
+    for k,v in ipairs(itemMap) do
+        if v == -trash.id then
+            itemMap[k] = 0
+        end
+    end
+    storeGrid.needsDisplay = true
+end
+
+function store.DropIntoStore(trash, targetX, targetY)
+    trash:SetStoreFallAnimator(targetX, targetY)
     trash:setRotation(0)
     trash:setScale(1)
     trash:setZIndex(RenderLayer.FTRASH)
@@ -165,14 +298,21 @@ function store.PlaceTrash(trash, rot, r, c)
         table.insert(trashInStore, trash)
     end
 
+    CheckStoreGoals()
+
+    PrintStoreGrid()
+
+    trash.storeRow, trash.storeCol = r, c
+    return true, itemToSwap
+end
+
+function PrintStoreGrid()
     local debugStr = ""
     for i=1,#itemMap,1 do
         debugStr = debugStr..itemMap[i].." "
         if i%8 == 0 then debugStr = debugStr.."\n" end
     end
     print(debugStr)
-    trash.storeRow, trash.storeCol = r, c
-    return true, itemToSwap
 end
 
 -- TAKES: a Trash, a row, a column, and some optional offsets
@@ -211,8 +351,9 @@ function GetTrashPosOnGrid(trash, r, c, offX, offY)
                     elseif itemMap[newToChangeInd] ~= itemAlreadyThere then
                         return nil, nil
                     end
+                -- If item is reserved for another falling item
                 elseif itemMap[newToChangeInd] < 0 and itemMap[newToChangeInd] ~= -trash.id then
-                    return nil, nil
+                    -- return nil, nil
                 end
                 table.insert(toChange, newToChangeInd)
             end
@@ -239,16 +380,16 @@ end
 
 function ReservoirSample(table, n)
     local returnTable = {}
-    n = math.min(n, #trashInStore)
+    n = math.min(n, #table)
 
     for i=1, n, 1 do
-        returnTable[i] = trashInStore[i]
+        returnTable[i] = table[i]
     end
 
-    for i=n+1, #trashInStore, 1 do
+    for i=n+1, #table, 1 do
         local r = math.random(1, i)
         if r <= n then
-            returnTable[r] = trashInStore[i]
+            returnTable[r] = table[i]
         end
     end
 
@@ -306,7 +447,6 @@ function store.WetTrash(centerTrash)
         for c,_ in ipairs(row) do
             local wR = centerTrash.storeRow + r - (#wetZone // 2) - 1
             local wC = centerTrash.storeCol + c - (#wetZone // 2) - 1
-            print (wR, wC)
             local trashID = itemMap[(wR-1)*w + wC]
             if trashID ~= nil and trashID ~= 0 and wetZone[r][c] == 1 then
                 local alreadySplashed = false
@@ -330,7 +470,20 @@ function store.WetTrash(centerTrash)
 end
 
 function store.SweetenTrash(n)
-    local targetTrash = ReservoirSample(trashInStore, n)
+    local classicTrash = {}
+    for _,trash in pairs(trashInStore) do
+        local isClassic = true
+        for _,tag in ipairs(trash.tags) do
+            if tag == "garbage" then
+                isClassic = false
+                break
+            end
+        end
+        if isClassic then
+            table.insert(classicTrash, trash)
+        end
+    end
+    local targetTrash = ReservoirSample(classicTrash, n)
     print("Sweetening "..#targetTrash)
     for _,v in ipairs(targetTrash) do
         v:AddEffect("sweeten")
@@ -365,31 +518,63 @@ function store.RemoveTrashFromStore(id, idx)
     return true
 end
 
--- Customer functions
+function store.Init()
+    storeFXSpr:add()
+    CreateRandomStoreGoal(math.random(1, 2))
+end
+
 function store.update()
     cQueue.update(trashInStore)
-    --storeGrid:drawInRect(storeX, storeY, 276, 148)
 
+    if (storeGrid.needsDisplay) then
+        gfx.lockFocus(storeFXImg)
+        storeFXImg:clear(gfx.kColorClear)
+        storeGrid:drawInRect(storeX, storeY, 276, 148)
+        gfx.unlockFocus()
+        storeFXSpr:markDirty()
+    end
+    -- Trash in store behaviour (e.g., fx animations)
     for _,trash in ipairs(trashInStore) do
         trash:update()
     end
 
+    -- Falling trash behaviour
     local i = 1
-
     while #fallingTrash > 0 and i <= #fallingTrash do
         local t = fallingTrash[i]
         t:moveTo(t.storeFallAnimator:currentValue())
 
         if t.storeFallAnimator:ended() then
-            for idx,v in ipairs(fallingTrash) do
-                if v == t then
-                    table.remove(fallingTrash, idx)
-                    i -= 1
-                    t:setZIndex(RenderLayer.STRASH)
-                    store.PlaceTrash(t, 1, t.storeTargetR, t.storeTargetC)
-                    break
-                end
+            table.remove(fallingTrash, i)
+            i -= 1
+            t:setZIndex(RenderLayer.STRASH)
+            
+            local _, itemAlreadyThere = GetTrashPosOnGrid(t, t.storeTargetR, t.storeTargetC)
+            if itemAlreadyThere == nil then
+                store.PlaceTrash(t, 1, t.storeTargetR, t.storeTargetC)
+                storeGrid.needsDisplay = true
+            -- Falling item would land on newly placed item.
+            -- Right now just deletes self. Maybe bounce to incinerator?
+            else
+                store.UnreserveSpace(t)
+                t.storeFallAnimator = gfx.animator.new({200, 500}, 
+                    {playdate.geometry.lineSegment.new(t.sprite.x, t.sprite.y, t.sprite.x+10, t.sprite.y-18), playdate.geometry.lineSegment.new(t.sprite.x+10, t.sprite.y-18, t.sprite.x+10, 300)}, 
+                    {playdate.easingFunctions.outCubic, playdate.easingFunctions.inCubic})
+                table.insert(fallingOffBoard, t)
             end
+        end
+
+        i += 1
+    end
+
+    i = 1
+    while #fallingOffBoard > 0 and i <= #fallingOffBoard do
+        local t = fallingOffBoard[i]
+        t:moveTo(t.storeFallAnimator:currentValue())
+
+        if t.storeFallAnimator:ended() then
+            table.remove(fallingOffBoard, i)
+            i -= 1
         end
 
         i += 1

@@ -126,6 +126,7 @@ function player.update()
                 if placed then
                     placeSFX:play(1)
                     heldTrash:setZIndex(RenderLayer.STRASH)
+                    heldTrash:moveBy(-4, 4)
                     heldTrash = swappedItem
                     if heldTrash then
                         heldTrash:setZIndex(RenderLayer.HTRASH)
@@ -173,7 +174,7 @@ end
 
 function MovePaw(x,y)
     moveSFX:play(1)
-    pawSpr:moveTo(x,y)
+    pawSpr:moveTo(x+4,y-4)
     PutTrashInPaw()
 end
 
@@ -193,6 +194,7 @@ function BBtnHeld()
             heldTrash:setZIndex(RenderLayer.BTRASH)
             heldTrash:setScale(0.5)
             incinerator.AddToIncinerator(heldTrash)
+            pawSpr:setImage(pawOpen)
             heldTrash = nil
         else
             errorSFX:play(1)

@@ -167,7 +167,6 @@ function Trash:Splash()
 
     if self.name == "cottoncandy" then
         local sellValue = self:Purchased()
-        AddScoreBlinkerUI(self.sprite.x, self.sprite.y, sellValue)
         store.RemoveTrashFromStore(self.id)
         self:remove()
         cashregister.score(sellValue)

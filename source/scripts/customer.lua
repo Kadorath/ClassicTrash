@@ -24,7 +24,7 @@ function Customer:init(data, x, y)
     self.requestSpr:setScale(0.35)
     self.requestSpr:moveTo(x,y-32)
     self.requestSpr:setZIndex(0)
-    self.requestSpr:add()
+    -- self.requestSpr:add()
 
     self.patience = data["patience"]
 

@@ -15,21 +15,22 @@ end
 truck.cRequests = {}
 
 function truck.Init()
-    truckTimer = playdate.timer.performAfterDelay(1, truck.Dump)
+    truck.Dump()
 end
 
 function truck.Dump()
-    local tName = trashIDs[1]
-    if #truck.cRequests > 0 and math.random() < 0.75 then
-        local rId = math.random(#truck.cRequests)
-        tName = truck.cRequests[rId]
-        table.remove(truck.cRequests, rId)
-    else
-        tName = trashIDs[math.random(#trashIDs)]
+    local trashBag = {}
+    for _,id in pairs(trashIDs) do
+        local trash = trashdata[id]
+        for i=1, trash.bagCount, 1 do
+            local newTrash = Trash(id, trash)
+            table.insert(trashBag, newTrash)
+        end
     end
 
-    local rTrash = trashdata[tName]
-    local newTrash = Trash(tName, rTrash)
-    conveyor.AddToDepot(newTrash)
-    truckTimer = playdate.timer.performAfterDelay(1000, truck.Dump)
+    while #trashBag > 0 do
+        local idx = math.random(1, #trashBag)
+        conveyor.AddToDepot(trashBag[idx])
+        table.remove(trashBag, idx)
+    end
 end

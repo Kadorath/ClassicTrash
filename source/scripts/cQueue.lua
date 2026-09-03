@@ -8,10 +8,6 @@ local customerQueue   = {}
 local customerLeaving = {}
 local queueRect = playdate.geometry.rect.new(180, 58, 112, 16)
 
-local scoreBlinkerAnim = gfx.animation.blinker.new(400, 100, true)
-scoreBlinkerAnim:start()
-local scoreBlinkers = {}
-
 local customerPawImg = gfx.image.new("images/Paw.png")
 local customerPawImg_diagonal = gfx.image.new("images/Paw_diagonal.png")
 local customerPaws = {}
@@ -24,8 +20,8 @@ function cQueue.update(trashInStore)
         if customer.state == 2 then
             for i,trash in ipairs(trashInStore) do
                 if trash.name == customer.request and trash.stage >= trash.minsellstage then
-                    CustomerPurchase(i, trash, customer)
-                    customer:SetState(4)
+                    -- CustomerPurchase(i, trash, customer)
+                    -- customer:SetState(4)
                     break
                 end
             end
@@ -73,7 +69,6 @@ function cQueue.update(trashInStore)
     end
 
     UpdateCustomerPaws()
-    UpdateScoreUI()
 
     -- gfx.drawRect(queueRect)
 end
@@ -96,6 +91,7 @@ end
 
 -- Scoring is done in UpdateCustomerPaws, when the trash is grabbbed by the paw
 function CustomerPurchase(idx, trash, c)
+    print("CUSTOMER PURCHASE", idx, trash, c)
     store.RemoveTrashFromStore(trash.id, idx)
     AddPawSwiper(trash)
 
@@ -107,46 +103,38 @@ function CustomerPurchase(idx, trash, c)
     end
 end
 
-local score500Img = gfx.image.new("images/ScoreUI/500")
-local score1000Img = gfx.image.new("images/ScoreUI/1000")
-local score1500Img = gfx.image.new("images/ScoreUI/1500")
-local score2000Img = gfx.image.new("images/ScoreUI/2000")
-local score50Img = gfx.image.new("images/ScoreUI/50")
-local scoreImgs = { score500Img, score1000Img, score1500Img, score2000Img, score50Img }
-function AddScoreBlinkerUI(xPos, yPos, v)
-    local scoreImg = scoreImgs[v] or score50Img
-    local blinkerSpr = gfx.sprite.new(scoreImg)
-    blinkerSpr:setCenter(0.75,0.5)
-    blinkerSpr:setZIndex(RenderLayer.HTRASH)
-    blinkerSpr:add()
-    local newBlinkerUI = {
-        sprite = blinkerSpr,
-        score = v,
-        x = xPos,
-        y = yPos,
-        ttl = 1.5
-    }
-    table.insert(scoreBlinkers, newBlinkerUI)
-end
-
 function AddPawSwiper(trash)
     -- Initialize paw sprite
     local pawSpr = gfx.sprite.new(customerPawImg)
     pawSpr:setZIndex(RenderLayer.PAWS)
-    pawSpr:add()
 
     -- Set up paw movement animator
     local targetX, targetY = trash:getPosition()
     local pawLine
-    if (targetX > 200) then
-        pawLine = playdate.geometry.lineSegment.new(450, targetY, targetX, targetY)
+    local r = math.random()
+    if (r < 0.5) then
+        if (targetX > 200) then
+            pawLine = playdate.geometry.lineSegment.new(450, targetY, targetX, targetY)
+        else
+            pawLine = playdate.geometry.lineSegment.new(-50, targetY, targetX, targetY)
+            pawSpr:setScale(-1,1)
+        end
     else
-        pawLine = playdate.geometry.lineSegment.new(-50, targetY, targetX, targetY)
-        pawSpr:setScale(-1,1)
+        if (targetY > 145) then
+            pawLine = playdate.geometry.lineSegment.new(targetX, 250, targetX, targetY)
+            pawSpr:setRotation(90)
+        else
+            pawLine = playdate.geometry.lineSegment.new(targetX, -50, targetX, targetY)
+            pawSpr:setRotation(270)
+
+        end
     end
     pawSpr:setCenter(0, 0.5)
     local pawAnim = gfx.animator.new(600, pawLine, playdate.easingFunctions["inOutQuad"])
     pawAnim.reverses = true
+    
+    pawSpr:moveTo(-100, -100)
+    pawSpr:add()
     table.insert(customerPaws, {sprite=pawSpr, anim=pawAnim, targetTrash=trash, grabbed=false})
 end
 
@@ -157,36 +145,25 @@ function UpdateCustomerPaws()
             customerPaws[i].targetTrash.sprite:moveTo(customerPaws[i].sprite:getPosition())
             customerPaws[i].targetTrash:update()
         end
+        local targetDistSqr = math.abs(customerPaws[i].sprite.x - customerPaws[i].targetTrash.sprite.x) 
+                            + math.abs(customerPaws[i].sprite.y - customerPaws[i].targetTrash.sprite.y)
         if not customerPaws[i].grabbed and 
-          math.abs(customerPaws[i].sprite.x - customerPaws[i].targetTrash.sprite.x) < 4 then
+          targetDistSqr < 16 then
             customerPaws[i].grabbed = true
             customerPaws[i].targetTrash:setZIndex(RenderLayer.CTRASH)
             local sellValue = customerPaws[i].targetTrash:Purchased()
             local xPos, yPos = customerPaws[i].targetTrash:getPosition()
             local plus50s = cashregister.score(sellValue)
             for i=1, plus50s, 1 do
-                AddScoreBlinkerUI(xPos + math.random(-30,30), yPos+math.random(-10,5), 5)
+                cashregister.AddScoreBlinkerUI(xPos + math.random(-30,30), yPos+math.random(-10,5), 5)
             end
-            AddScoreBlinkerUI(xPos, yPos-24, sellValue)
+            cashregister.AddScoreBlinkerUI(xPos, yPos-24, sellValue)
         end
 
         if customerPaws[i].anim:ended() then
             customerPaws[i].sprite:remove()
             customerPaws[i].targetTrash:remove()
             table.remove(customerPaws, i)
-        end
-    end
-end
-
-function UpdateScoreUI()
-    for i=#scoreBlinkers, 1, -1 do
-        scoreBlinkers[i].sprite:moveTo(scoreBlinkers[i].x, scoreBlinkers[i].y)
-        scoreBlinkers[i].sprite:setVisible(scoreBlinkerAnim.on)
-        scoreBlinkers[i].ttl -= deltaTime
-        scoreBlinkers[i].y -= 0.25
-        if scoreBlinkers[i].ttl <= 0 then
-            scoreBlinkers[i].sprite:remove()
-            table.remove(scoreBlinkers, i)
         end
     end
 end

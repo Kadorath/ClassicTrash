@@ -71,6 +71,7 @@ gameState = 1
 function GameStart()
     truck.Init()
     bus.Init()
+    store.Init()
     startmenuBG:remove()
     storeBG:add()
     beltBG:add()
@@ -84,7 +85,7 @@ end
 
 function playdate.update()
     deltaTime = playdate.getElapsedTime()
-    
+    playdate.resetElapsedTime()
     gfx.animation.blinker.updateAll()
     gfx.sprite.update()
 
@@ -102,11 +103,13 @@ function playdate.update()
 
     if gameState == 2 then
         gfx.drawText(cashregister.GetMoney(), 72, 224)
+        gfx.setColor(gfx.kColorWhite)
+        gfx.fillRect(330, 2, 50, 16)
+        gfx.setColor(gfx.kColorBlack)
+        gfx.drawText(string.format("%.3f", deltaTime), 340, 4)
     end
 
     playdate.timer.updateTimers()
-
-    playdate.resetElapsedTime()
 end
 
 -- Credit: https://stackoverflow.com/a/26367080
