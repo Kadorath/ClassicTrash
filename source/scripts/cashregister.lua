@@ -8,39 +8,65 @@ local bonusSFX = sfx.sampleplayer.new("audio/Scoreblip")
 
 local money = 0
 
-local mult = 0
+local bonus = 0
+local bonusFalloffTime = 4
 local combo = false
-local elapsedTime = 0
+local elapsedTime = bonusFalloffTime
+
+function cashregister.Init()
+    money = 0
+    bonus = 0
+    elapsedTime = bonusFalloffTime
+    combo = false
+end
 
 function cashregister.score(n)
-    money += 500*n + 50*mult
+    money += 500*n + 50*bonus
     scoreSFX:play()
-    if mult > 0 then
-        bonusSFX:setRate(1.0 + 0.2*(mult-1))
+    if bonus > 0 then
+        bonusSFX:setRate(1.0 + 0.2*(bonus-1))
         bonusSFX:play()    
     end
 
-    local oldMult = mult
+    return bonus
+end
+
+function cashregister.PlusBonus()
     if not combo then 
         combo = true
+        bonusFalloffTime = 4
         elapsedTime = 0
-        mult = 1
+        bonus = 1
     else
-        mult += 1
+        bonus += 1
+        bonusFalloffTime = 4
+        elapsedTime = 0
     end
 
-    return oldMult
 end
 
 function cashregister.update()
     elapsedTime += deltaTime
-    if elapsedTime > 3 then 
-        combo = false
-        mult = 0
+    if combo and elapsedTime > bonusFalloffTime then 
+        bonus -= 1
+        bonusFalloffTime = math.max(1, bonusFalloffTime - 1)
+        fastDecay = true
+        elapsedTime = 0
+        if bonus <= 0 then
+            elapsedTime = bonusFalloffTime
+            bonus = 0
+            combo = false
+        end
     end
 
     UpdateScoreUI()
-    -- gfx.drawText(mult, 120, 12)
+    gfx.drawText(bonus, 200, 224)
+    gfx.setColor(gfx.kColorBlack)
+    local bonusBarRect = playdate.geometry.rect.new(216, 226, 80, 12)
+    gfx.drawRect(bonusBarRect)
+    bonusBarRect:inset(2, 2)
+    bonusBarRect.width = math.max(0, 76 * (1 - elapsedTime / bonusFalloffTime))
+    gfx.fillRect(bonusBarRect)
 end
 
 function cashregister.GetMoney()

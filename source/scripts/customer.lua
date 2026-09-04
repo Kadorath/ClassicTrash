@@ -13,7 +13,7 @@ function Customer:init(data, x, y)
     self.img = gfx.imagetable.new("images/Customers/"..data["img"])
     self.sprite = gfx.sprite.new(self.img:getImage(1))
     self.animator = gfx.animation.loop.new(150, self.img)
-    self.sprite:setZIndex(0)
+    self.sprite:setZIndex(1)
     self.sprite:setCenter(0.5, 1)
     self.sprite:moveTo(x, y)
     self.sprite:add()
@@ -34,8 +34,8 @@ function Customer:init(data, x, y)
 
     self.idleTime = 0
     
-    -- 1: Entering, 2: Waiting, 3: Exiting, 4: Walking up to purchase
-    self:SetState(1)
+    -- 1: Entering, 2: Waiting, 3: Exiting, 4: Walking up to purchase, 5: Purchasing at store counter
+    self:setState(1)
 end
 
 function Customer:SetMoveTarget(x,y,s)
@@ -49,7 +49,7 @@ function Customer:SetMoveTarget(x,y,s)
     else self.sprite:setScale(1, 1) end
 end
 
-function Customer:SetState(s)
+function Customer:setState(s)
     self.state = s
 
     if self.state == 1 then
@@ -69,7 +69,7 @@ function Customer:SetState(s)
     if self.state == 3 then
         self.animator.startFrame = 1
         self.animator.endFrame = 8
-        self.requestSpr:remove()
+        -- self.requestSpr:remove()
     end
     if self.state == 4 then
         self.animator.startFrame = 1
@@ -90,7 +90,7 @@ function Customer:update()
         if sqrDistToTarget < 12 then
             self.moveDir = geo.vector2D.new(0,0)
             if self.state == 1 then
-                self:SetState(2)
+                self:setState(2)
             end
         end
         self.requestSpr:moveTo(self.sprite.x,self.sprite.y-32)

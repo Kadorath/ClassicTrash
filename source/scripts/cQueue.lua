@@ -12,6 +12,14 @@ local customerPawImg = gfx.image.new("images/Paw.png")
 local customerPawImg_diagonal = gfx.image.new("images/Paw_diagonal.png")
 local customerPaws = {}
 
+local patience = 120
+
+function cQueue.Init()
+    patience = 120
+    customerQueue   = {}
+    customerLeaving = {}
+    customerPaws = {}
+end
 function cQueue.update(trashInStore)
     local idx = 1
     while idx <= #customerQueue do
@@ -21,31 +29,31 @@ function cQueue.update(trashInStore)
             for i,trash in ipairs(trashInStore) do
                 if trash.name == customer.request and trash.stage >= trash.minsellstage then
                     -- CustomerPurchase(i, trash, customer)
-                    -- customer:SetState(4)
+                    -- customer:setState(4)
                     break
                 end
             end
 
-            customer.patience -= 1
-            if customer.patience <= 0 then
-                CustomerStormOff(idx, customer)
-            end
+            -- customer.patience -= 1
+            -- if customer.patience <= 0 then
+            --     CustomerStormOff(idx, customer)
+            -- end
         end
 
         customer:update()
 
         if customer.state == 2 and customer.idleTime <= 0 then
-            customer:SetState(1)
+            customer:setState(1)
             customer:SetMoveTarget(math.min(math.max(queueRect.x, customer.sprite.x+math.random(-25, 25)), queueRect.x+queueRect.w), 
                                    math.min(math.max(queueRect.y, customer.sprite.y+math.random(-25, 25)), queueRect.y+queueRect.h), 0.5)
         end
 
         if customer.state == 4 and customer.moveDir.x == 0 and customer.moveDir.y == 0 then
-            customer:SetState(5)
+            customer:setState(5)
             break
         end
         if customer.state == 5 and customer.idleTime <= 0 then
-            customer:SetState(3)
+            customer:setState(3)
             table.remove(customerQueue, idx)
             table.insert(customerLeaving, customer)
             customer:SetMoveTarget(432, 48, 1.5)
@@ -68,9 +76,21 @@ function cQueue.update(trashInStore)
         idx += 1
     end
 
-    UpdateCustomerPaws()
+    if #customerQueue == 0 then
+        print("Customer queue emptied, immediately ferrying more customers")
+        bus.FerryCustomers(math.random(3, 6))
+    end
 
-    -- gfx.drawRect(queueRect)
+    -- Patience
+    local crowdPenalty = cQueue.GetCrowdPenalty()
+    patience -= deltaTime * crowdPenalty
+    gfx.drawText(string.format("%d: %.1f", crowdPenalty, patience), 128, 224)
+
+    if patience <= 0 then
+        GameOver()
+    end
+
+    UpdateCustomerPaws()
 end
 
 function cQueue.AddCustomerToQueue(c)
@@ -79,13 +99,35 @@ function cQueue.AddCustomerToQueue(c)
     table.insert(truck.cRequests, c.request)
     c:SetMoveTarget(math.random(queueRect.x, queueRect.x+queueRect.w), 
                     math.random(queueRect.y, queueRect.y+queueRect.h))
+    return c
+end
+
+function cQueue.OnGoalMet(size)
+    local customersSentToPurchase = 0
+    local customerClearCt = size < 3 and size or math.max(8, math.min(3, (#customerQueue/2)))
+    for i=1, #customerQueue, 1 do
+        local c = customerQueue[i]
+        if c.state <= 2 then
+            c:setState(4)
+            customersSentToPurchase += 1
+        end
+        if customersSentToPurchase >= customerClearCt then
+            break
+        end
+    end
+
+    patience += 5*size
+end
+
+function cQueue.OnFullClear()
+    patience += 20
 end
 
 function CustomerStormOff(idx, c)
     print("Customer "..idx.." stormed off")
     table.remove(customerQueue, idx)
     table.insert(customerLeaving, c)
-    c:SetState(3)
+    c:setState(3)
     c:SetMoveTarget(432, 48, 2)
 end
 
@@ -151,9 +193,9 @@ function UpdateCustomerPaws()
           targetDistSqr < 16 then
             customerPaws[i].grabbed = true
             customerPaws[i].targetTrash:setZIndex(RenderLayer.CTRASH)
-            local sellValue = customerPaws[i].targetTrash:Purchased()
+            local sellValue, plus50s = customerPaws[i].targetTrash:Purchased()
             local xPos, yPos = customerPaws[i].targetTrash:getPosition()
-            local plus50s = cashregister.score(sellValue)
+            plus50s += cashregister.score(sellValue)
             for i=1, plus50s, 1 do
                 cashregister.AddScoreBlinkerUI(xPos + math.random(-30,30), yPos+math.random(-10,5), 5)
             end
@@ -170,4 +212,10 @@ end
 
 function cQueue.GetCustomerCount()
     return #customerQueue
+end
+
+function cQueue.GetCrowdPenalty()
+    local crowdPenalty = (math.floor(#customerQueue / 4)+1)
+    if #customerQueue == 0 then crowdPenalty = 0 end
+    return crowdPenalty
 end

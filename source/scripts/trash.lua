@@ -13,7 +13,7 @@ function Trash:init(name, data)
     self.id = nextTrashID
     nextTrashID += 1
     self.value = data["value"] or 1
-    self.bonus = 1
+    self.bonus = 0
     self.tags = copy(data["tags"]) or {}
 
     self.stageCt = data["stages"] or 1
@@ -30,6 +30,7 @@ function Trash:init(name, data)
     end
     self.sprite:setGroups({3})
     
+    self.displayVFX = true
     self.vfxAnim = nil
     self.vfxSpr = gfx.sprite.new()
     self.vfxSpr:add()
@@ -85,7 +86,7 @@ function Trash:init(name, data)
 end
 
 function Trash:update()
-    if self.vfxAnim then
+    if self.displayVFX and self.vfxAnim then
         self.vfxSpr:setImage(self.vfxAnim:image())
         self.vfxSpr:moveTo(self:getPosition())
         self.vfxSpr:setZIndex(self.sprite:getZIndex())
@@ -128,7 +129,7 @@ function Trash:SetStage(stage, s, c)
 end
 
 function Trash:Purchased()
-    local sellValue = (self.value + self.bonus)
+    local sellValue = self.value
     if self.name == "cottoncandy" then
         store.SweetenTrash(self.stage)
     end
@@ -143,7 +144,18 @@ function Trash:Purchased()
         end
     end
 
-    return sellValue
+    return sellValue, self.bonus
+end
+
+function Trash:setDisplayVFX(display)
+    self.displayVFX = display
+
+    if self.vfxAnim == nil then return end
+    if display then
+        self.vfxSpr:add()
+    else
+        self.vfxSpr:remove()
+    end
 end
 
 local sweetenVFX = gfx.animation.loop.new(150, gfx.imagetable.new("images/sparkle"))

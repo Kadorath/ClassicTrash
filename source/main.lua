@@ -12,6 +12,7 @@ import "scripts/store"
 import "scripts/thebus"
 import "scripts/thetruck"
 import "scripts/cashregister"
+import "scripts/cQueue"
 
 local gfx <const> = playdate.graphics
 local sfx <const> = playdate.sound
@@ -68,19 +69,30 @@ deltaTime = 0
 
 gameState = 1
 
+gameTime = 0
+
 function GameStart()
-    truck.Init()
+    cQueue.Init()
     bus.Init()
     store.Init()
+    conveyor.Init()
+    player.Init()
+    cashregister.Init()
     startmenuBG:remove()
     storeBG:add()
     beltBG:add()
     bordersBG:add()
     gridSpr:add()
     gameState = 2
+    gameTime = 0
 
     landfillAmb:play(0)
     gameplayBGM:play(0)
+end
+
+function GameOver()
+    gameState = 3
+    gfx.sprite.removeAll()
 end
 
 function playdate.update()
@@ -94,11 +106,19 @@ function playdate.update()
             GameStart()
         end
     elseif gameState == 2 then
+        gameTime += deltaTime
         player.update()
         conveyor.update()
         store.update()
         incinerator.update()
         cashregister.update()
+    elseif gameState == 3 then
+        gfx.setColor(gfx.kColorBlack)
+        gfx.drawTextAligned("Game over!", 200, 90, kTextAlignment.center)
+        gfx.drawTextAligned(string.format("score: %i", cashregister.GetMoney()), 200, 112, kTextAlignment.center)
+        if playdate.buttonJustPressed(playdate.kButtonA) then
+            GameStart()
+        end
     end
 
     if gameState == 2 then
@@ -106,10 +126,14 @@ function playdate.update()
         gfx.setColor(gfx.kColorWhite)
         gfx.fillRect(330, 2, 50, 16)
         gfx.setColor(gfx.kColorBlack)
-        gfx.drawText(string.format("%.3f", deltaTime), 340, 4)
+        gfx.drawText(string.format("%.2f", gameTime), 340, 4)
     end
 
     playdate.timer.updateTimers()
+end
+
+function GetDifficultyLevel()
+    return math.floor(gameTime/60)
 end
 
 -- Credit: https://stackoverflow.com/a/26367080

@@ -36,6 +36,7 @@ function incinerator.AddToIncinerator(trash)
     table.insert(trashBag, trash)
     trash:moveTo(incinX + incinW/2, incinY-98)
     trash:setCollideRect(0,0,trash:getSize())
+    trash:setDisplayVFX(false)
 
     topTrash = trash
 end

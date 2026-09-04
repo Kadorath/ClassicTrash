@@ -28,12 +28,15 @@ local pawSpr  = gfx.sprite.new(pawOpen)
 local x,y = conveyor.UpdateSelection(0)
 pawSpr:setZIndex(RenderLayer.PLAYER)
 pawSpr:moveTo(x,y)
-pawSpr:add()
 
 local heldTrash = nil
 local rotation  = 1
 
 local section = 1
+
+function player.Init()
+    pawSpr:add()
+end
 
 function player.update()
     local curDPadInput = playdate.getButtonState() & (playdate.kButtonRight|playdate.kButtonDown|playdate.kButtonLeft|playdate.kButtonUp)
@@ -151,7 +154,7 @@ function player.update()
         end
     end
 
-    if playdate.buttonIsPressed(playdate.kButtonB) then
+    if not bBtnHeld and playdate.buttonIsPressed(playdate.kButtonB) then
         bBtnHoldTime += deltaTime
         if bBtnHoldTime > holdTimeToTrash then
             BBtnHeld()
@@ -199,7 +202,7 @@ function BBtnHeld()
         else
             errorSFX:play(1)
         end
-
-        bBtnHeld = true
     end
+
+    bBtnHeld = true
 end

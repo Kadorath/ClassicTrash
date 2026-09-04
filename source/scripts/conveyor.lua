@@ -1,4 +1,5 @@
 import "scripts/incinerator"
+import "scripts/thetruck"
 
 conveyor = {}
 
@@ -7,15 +8,12 @@ local gfx <const> = playdate.graphics
 local depot = {}
 
 -- 60
+local elapsedFrames = 0
 local speed = 60
 local capacity = 4
 local onBelt = 0
 local belt = {}
 local oldBelt = {}
-for i=1, capacity, 1 do
-    table.insert(belt, -1)
-    table.insert(oldBelt, -1)
-end
 
 local pushedOffBeltItem = nil
 local dropTarget_R,dropTarget_C,dropTarget_X,dropTarget_Y
@@ -28,7 +26,40 @@ local beltY = 56
 
 local needsDisplay = true
 
-local elapsedFrames = 0
+function conveyor.Init()
+    depot = {}
+    elapsedFrames = 0
+    onBelt = 0
+    belt = {}
+    oldBelt = {}
+    dropTarget_R,dropTarget_C,dropTarget_X,dropTarget_Y = nil
+    pushedOffBeltItem = nil
+    for i=1, capacity, 1 do
+        table.insert(belt, -1)
+        table.insert(oldBelt, -1)
+    end
+
+    truck.Init()
+
+    conveyor.AddToBelt(table.remove(depot))
+    conveyor.AddToBelt(table.remove(depot))
+    conveyor.AddToBelt(table.remove(depot))
+
+    -- Drop some initial trash into the store
+    for i=1, 2, 1 do
+        local startingTrash = table.remove(depot)
+        if startingTrash == nil then break end
+
+        dropTarget_R,dropTarget_C,dropTarget_X,dropTarget_Y = store.GetAvailableSpace(startingTrash, (i-1)*4 + 1, i*4 - 1)
+        startingTrash:setStoreTarget(dropTarget_R, dropTarget_C)
+        startingTrash:setZIndex(RenderLayer.BTRASH)
+        startingTrash:add()
+        store.ReserveSpace(startingTrash, 1, dropTarget_R, dropTarget_C)
+        store.DropIntoStore(startingTrash, dropTarget_X, dropTarget_Y)
+        dropTarget_R = nil
+    end
+end
+
 function conveyor.update()
     for i,trash in ipairs(belt) do
         if trash ~= -1 then
@@ -39,7 +70,6 @@ function conveyor.update()
         if pushedOffBeltItem:UpdateBeltPosition() and dropTarget_R ~= nil then
             pushedOffBeltItem:setStoreTarget(dropTarget_R, dropTarget_C)
             pushedOffBeltItem:setZIndex(RenderLayer.BTRASH)
-
             store.DropIntoStore(pushedOffBeltItem, dropTarget_X, dropTarget_Y)
             pushedOffBeltItem = nil
             dropTarget_R = nil
@@ -47,8 +77,9 @@ function conveyor.update()
     end
 
     elapsedFrames += 1
+    local difficultyAdjustedSpeed = speed - (math.min(35, 10*GetDifficultyLevel()))
     -- Every speed ticks elapsed, when there are items to push
-    if #depot > 0 and elapsedFrames >= speed then
+    if #depot > 0 and elapsedFrames >= difficultyAdjustedSpeed then
         -- Belt is not full yet, push item onto belt
         if (onBelt < capacity) then
             print("CONVEYOR: Adding item to belt")
@@ -159,6 +190,10 @@ function conveyor.TakeFromBelt(trashToSwap)
     if targetBelt[selection] ~= -1 then
         if selection+lagAdjust <= capacity then
             selectedTrash = belt[selection+lagAdjust]
+            if (selectedTrash == nil) then
+                print("ERROR: selectedTrash was nil at line 167")
+                return nil
+            end
             belt[selection+lagAdjust] = trashToSwap or -1
             selectedTrash:setScale(1)
             selectedTrash:setCenter(selectedTrash.center[1], selectedTrash.center[2])
@@ -170,9 +205,8 @@ function conveyor.TakeFromBelt(trashToSwap)
             if selectedTrash then
                 selectedTrash:setScale(1)
                 selectedTrash:setCenter(selectedTrash.center[1], selectedTrash.center[2])
+                store.UnreserveSpace(selectedTrash)
             end
-
-            store.UnreserveSpace(selectedTrash)
         end
     elseif trashToSwap then
         if selection+lagAdjust <= capacity then

@@ -16,6 +16,7 @@ local trashInStore = {}
 local fallingTrash = {}
 local fallingOffBoard = {}
 local goals = {}
+local timeSinceLastGoal = 0
 
 store.rows = 4
 store.columns = 8
@@ -33,6 +34,7 @@ storeFXSpr:setZIndex(RenderLayer.STRASH)
 
 function storeGrid:drawCell(section, row, column, selected, x, y, width, height)
     -- Draw borders around the goal shape
+    gfx.setLineWidth(2)
     local m = storeGrid:getNumberOfColumns()
     local ind = (row-1)*m + column
     for _,goal in pairs(goals) do
@@ -74,17 +76,83 @@ function storeGrid:drawCell(section, row, column, selected, x, y, width, height)
     -- end
 end
 
-for i=1,storeGrid:getNumberOfColumns(),1 do
-    for j=1,storeGrid:getNumberOfRowsInSection(1),1 do
-        table.insert(itemMap, 0)
-    end
-end
-
-
 function CreateRandomStoreGoal(size)
-    size = size or 1
-    local newGoal = Request(size)
-    table.insert(goals, newGoal)
+    local newGoal
+    if size == nil then
+        if (GetDifficultyLevel() >= 1 and math.random() < 0.25) then
+            newGoal = Request(3)
+            table.insert(goals, newGoal)
+        else
+            if (math.random() < 0.5) then
+                newGoal = Request(2, 1, 4, 1, 4)
+                table.insert(goals, newGoal)
+            else
+                newGoal = Request(1, 1, 4, 1, 2)
+                table.insert(goals, newGoal)
+                newGoal = Request(1, 1, 4, 3, 4)
+                table.insert(goals, newGoal)
+            end
+
+            if (math.random() < 0.5) then
+                newGoal = Request(2, 5, 8, 1, 4)
+                table.insert(goals, newGoal)
+            else
+                newGoal = Request(1, 5, 8, 1, 2)
+                table.insert(goals, newGoal)
+                newGoal = Request(1, 5, 8, 3, 4)
+                table.insert(goals, newGoal)
+            end
+        end
+    else
+        local goalMap = {}
+        for i=1,store.columns,1 do
+            for j=1,store.rows,1 do
+                table.insert(goalMap, 0)
+            end
+        end
+        for _,g in pairs(goals) do
+            for i=1,#goalMap,1 do
+                if g.map[i] == 1 then
+                    goalMap[i] = 1
+                end
+            end
+        end
+        
+        local minX, maxX, minY, maxY = nil, nil, nil, nil
+        local largestN = 0
+        local squareEndingAt = {}
+        for i=1,store.rows,1 do
+            for j=1,store.columns,1 do
+                local ind = (i-1)*store.columns + j
+                squareEndingAt[ind] = 0
+                if goalMap[ind] == 0 then
+                    local squareSize = 1
+                    if i > 1 and j > 1 then
+                        squareSize = math.min(
+                            squareEndingAt[(i-2)*store.columns + j],
+                            squareEndingAt[(i-1)*store.columns + j-1],
+                            squareEndingAt[(i-2)*store.columns + j-1]
+                        ) + 1
+                    end
+                    squareEndingAt[ind] = squareSize
+
+                    if squareSize > largestN then
+                        largestN = squareSize
+                        minX = j - squareSize + 1
+                        maxX = j
+                        minY = i - squareSize + 1
+                        maxY = i
+                    end
+                end
+            end
+        end
+        -- print("Largest square:", largestN, "bounds:", minX, maxX, minY, maxY)
+        newGoal = Request(math.min(size, largestN-1), minX, maxX, minY, maxY)
+        table.insert(goals, newGoal)
+    end
+
+    storeGrid.needsDisplay = true
+    timeSinceLastGoal = 0
 end
 
 function CheckStoreGoals()
@@ -140,20 +208,30 @@ function CheckStoreGoals()
                 end
             end
 
-            
             table.remove(goals, i)
             i -= 1
+
+            OnGoalMet(goal.size)
+
             storeGrid.needsDisplay = true
             -- Goal completed. If conditions is met to generate new goals, do that after a delay
             if (#goals == 0) then
-                playdate.timer.performAfterDelay(2000, function()
-                    CreateRandomStoreGoal(math.random(1, 2))
-                    storeGrid.needsDisplay = true
-                end)
+                print("Full clear!")
+                OnFullClear()
+                CreateRandomStoreGoal()
             end
         end
         i += 1
     end
+end
+
+function OnGoalMet(size)
+    cashregister.PlusBonus()
+    cQueue.OnGoalMet(size)
+end
+
+function OnFullClear()
+    cQueue.OnFullClear()
 end
 
 -- Store grid functions
@@ -209,9 +287,11 @@ function store.PlaceTrashRandomly(trash)
     return false
 end
 
-function store.GetAvailableSpace(trash)
+function store.GetAvailableSpace(trash, minX, maxX)
+    minX = minX or 1
+    maxX = maxX or store.columns
     for i=1,10,1 do
-        local r,c = math.random(1,4), math.random(1,8)
+        local r,c = math.random(1,4), math.random(minX,maxX)
         local toChange, itemAlreadyThere = GetTrashPosOnGrid(trash, r, c)
         
         if itemAlreadyThere == nil and toChange ~= nil then
@@ -519,12 +599,30 @@ function store.RemoveTrashFromStore(id, idx)
 end
 
 function store.Init()
+    itemMap = {}
+    trashInStore = {}
+    fallingTrash = {}
+    fallingOffBoard = {}
+    goals = {}
+    timeSinceLastGoal = 0
+
+    for i=1,storeGrid:getNumberOfColumns(),1 do
+        for j=1,storeGrid:getNumberOfRowsInSection(1),1 do
+            table.insert(itemMap, 0)
+        end
+    end
     storeFXSpr:add()
-    CreateRandomStoreGoal(math.random(1, 2))
+    CreateRandomStoreGoal()
 end
 
 function store.update()
     cQueue.update(trashInStore)
+    timeSinceLastGoal += deltaTime
+    local maxSize = 2
+    if GetDifficultyLevel() > 1 then maxSize = 3 end
+    if timeSinceLastGoal > 6 and #goals < math.min(cQueue.GetCrowdPenalty(), GetDifficultyLevel() + 2) then
+        CreateRandomStoreGoal(math.random(1, maxSize))
+    end
 
     if (storeGrid.needsDisplay) then
         gfx.lockFocus(storeFXImg)
