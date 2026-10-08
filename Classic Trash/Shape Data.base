@@ -1,6 +1,9 @@
 filters:
   and:
     - file.inFolder("Shapes")
+formulas:
+  min_value: size*10*complexity
+  max_value: 70*
 views:
   - type: table
     name: View
@@ -8,3 +11,11 @@ views:
       - file.name
       - size
       - complexity
+      - formula.min_value
+    sort:
+      - property: complexity
+        direction: ASC
+      - property: formula.max_value
+        direction: ASC
+    columnSize:
+      formula.min_value: 102

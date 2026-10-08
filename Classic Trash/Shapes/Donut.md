@@ -1,4 +1,4 @@
 ---
 size: 8
-complexity: "2"
+complexity: 2
 ---

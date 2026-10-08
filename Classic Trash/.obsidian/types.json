@@ -5,6 +5,7 @@
     "tags": "tags",
     "modifiers": "multitext",
     "size": "number",
-    "value_mod": "number"
+    "value_mod": "number",
+    "complexity": "number"
   }
 }

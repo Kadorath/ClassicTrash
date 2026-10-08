@@ -26,4 +26,4 @@ views:
     columnSize:
       note.size: 82
       formula.test: 83
-      note.value_mod: 107
+      note.modifiers: 96
