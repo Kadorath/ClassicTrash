@@ -1,0 +1,29 @@
+filters:
+  and:
+    - file.inFolder("Trash")
+formulas:
+  test: (size*20 - 10) + if(value_mod, value_mod, 0)
+properties:
+  formula.test:
+    displayName: value
+  note.value modifier:
+    displayName: value_mod
+views:
+  - type: table
+    name: View
+    order:
+      - file.name
+      - size
+      - formula.test
+      - modifiers
+    sort:
+      - property: file.name
+        direction: ASC
+      - property: value
+        direction: DESC
+      - property: size
+        direction: DESC
+    columnSize:
+      note.size: 82
+      formula.test: 83
+      note.value_mod: 107

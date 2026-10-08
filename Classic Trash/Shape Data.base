@@ -1,0 +1,10 @@
+filters:
+  and:
+    - file.inFolder("Shapes")
+views:
+  - type: table
+    name: View
+    order:
+      - file.name
+      - size
+      - complexity
