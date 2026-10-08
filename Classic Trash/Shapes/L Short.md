@@ -1,4 +1,4 @@
 ---
-size: 5
+size: 4
 complexity: 2
 ---

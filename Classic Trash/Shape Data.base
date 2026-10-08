@@ -13,6 +13,8 @@ views:
       - complexity
       - formula.min_value
     sort:
+      - property: formula.min_value
+        direction: DESC
       - property: complexity
         direction: ASC
       - property: formula.max_value
