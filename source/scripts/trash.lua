@@ -4,7 +4,7 @@ import "scripts/store"
 
 local gfx <const> = playdate.graphics
 
-local nextTrashID = 1
+nextTrashID = 1
 
 class("Trash").extends()
 
@@ -32,6 +32,7 @@ function Trash:init(name, data)
     
     self.displayVFX = true
     self.vfxAnim = nil
+    self.vfxImgTable = nil
     self.vfxSpr = gfx.sprite.new()
     self.vfxSpr:add()
 
@@ -57,6 +58,10 @@ function Trash:init(name, data)
         table.insert(self.shape, newRow)
     end
     self.center = {centerData[1], centerData[2]}
+    self.storeRow = nil
+    self.storeCol = nil
+    self.heldOffX = 0
+    self.heldOffY = 0
 
     self.response = data["response"]
 
@@ -70,9 +75,6 @@ function Trash:init(name, data)
     self.storeTargetR = nil
     self.storeTargetC = nil
     self.storeFallAnimator = nil
-
-    self.storeRow = nil
-    self.storeCol = nil
 
     -- Effects
     self.splashed = false
@@ -88,7 +90,7 @@ end
 function Trash:update()
     if self.displayVFX and self.vfxAnim then
         self.vfxSpr:setImage(self.vfxAnim:image())
-        self.vfxSpr:moveTo(self:getPosition())
+        self.vfxSpr:moveTo(self.sprite:getPosition())
         self.vfxSpr:setZIndex(self.sprite:getZIndex())
     end
 end
@@ -96,7 +98,7 @@ end
 function Trash:checkResponse(other)
     if self.response then
         for k,r in pairs(self.response) do
-            print(k, other.name)
+            -- print(k, other.name)
             if k == other.name then
                 if r == "stack" then
                     local newStage = math.min(self.stageCt, self.stage + other.stage)
@@ -158,17 +160,57 @@ function Trash:setDisplayVFX(display)
     end
 end
 
-local sweetenVFX = gfx.animation.loop.new(150, gfx.imagetable.new("images/sparkle"))
-local smellyVFX = gfx.animation.loop.new(150, gfx.imagetable.new("images/smelly"))
-local wetVFX = gfx.animation.loop.new(150, gfx.imagetable.new("images/wet"))
+-- TODO: Effect sprite rotation not correct on sweetened trash that
+-- has been rotated off center
+local vfx = {
+    ["sweet"] = gfx.imagetable.new("images/Effects/sparkle"),
+    ["smelly"] = gfx.imagetable.new("images/Effects/smelly"),
+    ["wet"] = gfx.imagetable.new("images/Effects/wet")
+}
+local memoizedFXImgTables = {}
+function CreateEffectImageTable(trash, fxName)
+    local memoKey = trash.name..fxName
+    if memoizedFXImgTables[memoKey] ~= nil then
+        return memoizedFXImgTables[memoKey]
+    end
+
+    local fx = vfx[fxName]
+    local shape = trash.shape
+    local newImgTable = gfx.imagetable.new(#fx, #shape*32, #shape*32)
+    for i=1,#newImgTable,1 do
+        newImgTable[i] = gfx.image.new(#shape*32, #shape*32)
+    end
+
+    for r,row in ipairs(shape) do
+        for c,v in ipairs(row) do
+            if v == 1 then
+                for i=1,#newImgTable,1 do
+                    local img = newImgTable[i]
+                    gfx.lockFocus(img)
+                    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+                    fx[i]:draw((c-1)*32, (r-1)*32)
+                    gfx.unlockFocus()
+                end
+            end
+        end
+    end
+
+    memoizedFXImgTables[memoKey] = newImgTable
+    print("Created new effect image for: ", memoKey)
+    return newImgTable
+end
+
 function Trash:AddEffect(effect)
     if effect == "sweeten" then
-        self.vfxAnim = sweetenVFX
+        self.vfxImgTable = CreateEffectImageTable(self, "sweet")
+        self.vfxAnim = gfx.animation.loop.new(150, self.vfxImgTable)
         self.bonus += 1
     elseif effect == "smelly" then
-        self.vfxAnim = smellyVFX
+        self.vfxImgTable = CreateEffectImageTable(self, "smelly")
+        self.vfxAnim = gfx.animation.loop.new(350, self.vfxImgTable)
     elseif effect == "wet" then
-        self.vfxAnim = wetVFX
+        self.vfxImgTable = CreateEffectImageTable(self, "wet")
+        self.vfxAnim = gfx.animation.loop.new(150, self.vfxImgTable)
     end
 end
 
@@ -197,6 +239,7 @@ function Trash:remove()
 end
 function Trash:moveTo(x,y)
     self.sprite:moveTo(x,y)
+    if self.vfxSpr then self.vfxSpr:moveTo(x,y)end
 end
 function Trash:moveBy(x,y)
     self.sprite:moveBy(x,y)
@@ -234,27 +277,61 @@ function Trash:updateVelocity(x,y)
 end
 
 function Trash:rotateClockwise()
+    offX = self.heldOffX
+    offY = self.heldOffY
+
     self.rotation += 1
     self.sprite:setRotation(self.sprite:getRotation()+90)
-    if self.sprite:getRotation() == 0 then
-        self.rotation = 0
-        self.sprite:setRotation(0)
-        self.sprite:setCenter(self.center[1], self.center[2])
+    self.vfxSpr:setRotation(self.sprite:getRotation())
+    if offX == 0 and offY == 0 then
+        if self.sprite:getRotation() == 0 then
+            self.rotation = 0
+            self.sprite:setRotation(0)
+            self.sprite:setCenter(self.center[1], self.center[2])
+        end
+        Rotate90(self.shape)
+    else
+        print("ROTATING WITH OFFSET OF ", offX, offY)
+        Rotate90OffCenter(self.shape, offX, offY)
+        self.heldOffX = -offY
+        self.heldOffY = offX
     end
-
-    Rotate90(self.shape)
 end
 
-function Rotate90(mat)
-    -- Rotate the shape matrix
-    local debugStr = ""
+function Rotate90OffCenter(mat, offX, offY)
+    local expandedShape = {}
+    local bufferSize = (#mat-1) / 2
+    local expandedSize = #mat+bufferSize*2
+    for i=1,expandedSize,1 do
+        local newRow = {}
+        for j=1,expandedSize,1 do
+            newRow[j] = 0
+        end
+        expandedShape[i] = newRow
+    end
+
     for i=1,#mat,1 do
         for j=1,#mat,1 do
-            debugStr = debugStr..mat[i][j].." "
+            if mat[i][j] == 1 then
+                expandedShape[i+bufferSize + offY][j+bufferSize - offX] = 1
+            end
         end
-        debugStr = debugStr.."\n"
     end
-    print(debugStr)
+
+    Rotate90(expandedShape)
+
+    for i=1,#mat,1 do
+        for j=1,#mat,1 do
+            mat[i][j] = expandedShape[i + bufferSize - offX][j + bufferSize - offY]
+        end
+    end
+
+    DEBUGPRINTMAT(mat)
+end
+
+-- Rotate the shape matrix
+function Rotate90(mat)
+    DEBUGPRINTMAT(mat)
 
     -- transpose
     for i=1,#mat,1 do
@@ -273,6 +350,10 @@ function Rotate90(mat)
         end
     end
 
+    DEBUGPRINTMAT(mat)
+end
+
+function DEBUGPRINTMAT(mat)
     debugStr = ""
     for i=1,#mat,1 do
         for j=1,#mat,1 do

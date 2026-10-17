@@ -12,8 +12,6 @@ for id,_ in pairs(trashdata) do
     table.insert(trashIDs, id)
 end
 
-truck.cRequests = {}
-
 function truck.Init()
     truck.Dump()
 end

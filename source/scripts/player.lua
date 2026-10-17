@@ -80,7 +80,7 @@ function player.update()
         elseif playdate.buttonJustPressed(playdate.kButtonA) then
             local newTrash = conveyor.TakeFromBelt(heldTrash)
             heldTrash = nil
-            rotation = 1
+            -- rotation = 1
             if newTrash then 
                 newTrash:setZIndex(RenderLayer.HTRASH)
                 heldTrash = newTrash
@@ -142,8 +142,10 @@ function player.update()
                     errorSFX:play(1)
                 end
             else 
-                local pickup = store.PickupTrash()
+                local pickup, offY, offX = store.PickupTrash()
                 if pickup then
+                    pickup.heldOffX = offX
+                    pickup.heldOffY = offY
                     heldTrash = pickup
                     print("Picked Up: ", heldTrash.name, heldTrash.rotation)
                     heldTrash:setZIndex(RenderLayer.HTRASH)
@@ -184,9 +186,9 @@ end
 function PutTrashInPaw()
     local x, y = pawSpr:getPosition()
     if heldTrash then
-        heldTrash:setRotation(90*heldTrash.rotation)
+        heldTrash:setRotation(90*heldTrash.rotation) -- should only matter if coming off conveyor belt
         heldTrash:setCenter(heldTrash.center[1], heldTrash.center[2])
-        heldTrash:moveTo(x,y)
+        heldTrash:moveTo(x - 32*heldTrash.heldOffX,y - 32*heldTrash.heldOffY)
     end
 end
 

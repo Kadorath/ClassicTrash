@@ -1,5 +1,7 @@
 import "CoreLibs/object"
 
+local gfx <const> = playdate.graphics
+
 class("Request").extends()
 
 local requestShapeSmall = {
@@ -43,6 +45,22 @@ function Request:init(size, minX, maxX, minY, maxY)
     end
     self.size = size
     self:pickRandomShape(size, minX, maxX, minY, maxY)
+
+    self.type = ""
+    self.ditherType = nil
+    self:setType("default")
+end
+
+local requestTypes = {
+    ["default"] = { ditherType = gfx.image.kDitherTypeDiagonalLine },
+    ["fishy"] = { ditherType = gfx.image.kDitherTypeHorizontalLine }
+}
+
+function Request:setType(t)
+    self.type = t
+    local rType = requestTypes[t]
+    self.ditherType = rType.ditherType
+    print("Setting type: ", t, requestTypes[t], requestTypes[t].ditherType, gfx.kDitherTypeDiagonalLine)
 end
 
 function Request:pickRandomShape(size, minX, maxX, minY, maxY)

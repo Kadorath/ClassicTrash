@@ -10,6 +10,7 @@ local queueRect = playdate.geometry.rect.new(180, 58, 112, 16)
 
 local customerPawImg = gfx.image.new("images/Paw.png")
 local customerPawImg_diagonal = gfx.image.new("images/Paw_diagonal.png")
+local pawSwiperPool = {}
 local customerPaws = {}
 
 local patience = 120
@@ -19,26 +20,19 @@ function cQueue.Init()
     customerQueue   = {}
     customerLeaving = {}
     customerPaws = {}
+
+    pawSwiperPool = {}
+    for i=1,20,1 do
+        local pawSpr = gfx.sprite.new(customerPawImg)
+        pawSwiperPool[i] = {sprite=pawSpr, anim=pawAnim, targetTrash=trash, grabbed=false, active=false}
+        pawSwiperPool[i].sprite:setZIndex(RenderLayer.PAWS)
+        -- pawSwiperPool[i].sprite:setCenter(0, 0.5)
+    end
 end
 function cQueue.update(trashInStore)
     local idx = 1
     while idx <= #customerQueue do
         local customer = customerQueue[idx]
-        
-        if customer.state == 2 then
-            for i,trash in ipairs(trashInStore) do
-                if trash.name == customer.request and trash.stage >= trash.minsellstage then
-                    -- CustomerPurchase(i, trash, customer)
-                    -- customer:setState(4)
-                    break
-                end
-            end
-
-            -- customer.patience -= 1
-            -- if customer.patience <= 0 then
-            --     CustomerStormOff(idx, customer)
-            -- end
-        end
 
         customer:update()
 
@@ -95,8 +89,6 @@ end
 
 function cQueue.AddCustomerToQueue(c)
     table.insert(customerQueue, c)
-    print("Adding request: ", c.request)
-    table.insert(truck.cRequests, c.request)
     c:SetMoveTarget(math.random(queueRect.x, queueRect.x+queueRect.w), 
                     math.random(queueRect.y, queueRect.y+queueRect.h))
     return c
@@ -136,20 +128,29 @@ function CustomerPurchase(idx, trash, c)
     print("CUSTOMER PURCHASE", idx, trash, c)
     store.RemoveTrashFromStore(trash.id, idx)
     AddPawSwiper(trash)
-
-    for i,v in ipairs(truck.cRequests) do
-        if v == trash.name then
-            table.remove(truck.cRequests, i)
-            break
-        end
-    end
 end
 
 function AddPawSwiper(trash)
-    -- Initialize paw sprite
-    local pawSpr = gfx.sprite.new(customerPawImg)
-    pawSpr:setZIndex(RenderLayer.PAWS)
+    local pawSwiper = nil
+    for k,paw in ipairs(pawSwiperPool) do
+        if not paw.active then
+            pawSwiper = paw
+            print("FOUND POOLWED PAW SWiPER", k, paw)
+            break
+        end
+    end
+    if pawSwiper == nil then
+        print("WARNING: AddPawSwiper could not find free paw swiper in pool. Adding new paw swiper to pool.")
+        local poolIdx = #pawSwiperPool+1
+        local newPawSpr = gfx.sprite.new(customerPawImg)
+        pawSwiperPool[poolIdx] = {sprite=newPawSpr, anim=pawAnim, targetTrash=trash, grabbed=false, active=false}
+        pawSwiperPool[poolIdx].sprite:setZIndex(RenderLayer.PAWS)
+        pawSwiper = pawSwiperPool[poolIdx]
+    end
 
+    local pawSpr = pawSwiper.sprite
+    pawSpr:setRotation(0)
+    pawSpr:setScale(1, 1)
     -- Set up paw movement animator
     local targetX, targetY = trash:getPosition()
     local pawLine
@@ -168,16 +169,21 @@ function AddPawSwiper(trash)
         else
             pawLine = playdate.geometry.lineSegment.new(targetX, -50, targetX, targetY)
             pawSpr:setRotation(270)
-
         end
     end
-    pawSpr:setCenter(0, 0.5)
     local pawAnim = gfx.animator.new(600, pawLine, playdate.easingFunctions["inOutQuad"])
     pawAnim.reverses = true
     
+    pawSpr:setCenter(0, 0.5)
     pawSpr:moveTo(-100, -100)
+
+    pawSwiper.anim = pawAnim
+    pawSwiper.targetTrash = trash
+    pawSwiper.grabbed = false
+    pawSwiper.active = true
     pawSpr:add()
-    table.insert(customerPaws, {sprite=pawSpr, anim=pawAnim, targetTrash=trash, grabbed=false})
+
+    customerPaws[#customerPaws+1] = pawSwiper
 end
 
 function UpdateCustomerPaws()
@@ -205,6 +211,7 @@ function UpdateCustomerPaws()
         if customerPaws[i].anim:ended() then
             customerPaws[i].sprite:remove()
             customerPaws[i].targetTrash:remove()
+            customerPaws[i].active = false
             table.remove(customerPaws, i)
         end
     end

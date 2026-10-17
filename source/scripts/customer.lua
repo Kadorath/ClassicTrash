@@ -18,14 +18,6 @@ function Customer:init(data, x, y)
     self.sprite:moveTo(x, y)
     self.sprite:add()
 
-    self.request = data["wants"][math.random(#data["wants"])]
-    self.requestImg = gfx.image.new("images/Trash/"..self.request)
-    self.requestSpr = gfx.sprite.new(self.requestImg)
-    self.requestSpr:setScale(0.35)
-    self.requestSpr:moveTo(x,y-32)
-    self.requestSpr:setZIndex(0)
-    -- self.requestSpr:add()
-
     self.patience = data["patience"]
 
     self.speed      = 1
@@ -69,7 +61,6 @@ function Customer:setState(s)
     if self.state == 3 then
         self.animator.startFrame = 1
         self.animator.endFrame = 8
-        -- self.requestSpr:remove()
     end
     if self.state == 4 then
         self.animator.startFrame = 1
@@ -85,7 +76,9 @@ end
 
 function Customer:update()
     if self.moveDir then
-        self.sprite:moveBy(self.moveDir:unpack())
+        if not (self.name == "Bnnuy" and self.animator.frame <= 3) then
+            self.sprite:moveBy(self.moveDir:unpack())
+        end
         local sqrDistToTarget = ((self.sprite.x-self.moveTarget[1])^2 + (self.sprite.y-self.moveTarget[2])^2)
         if sqrDistToTarget < 12 then
             self.moveDir = geo.vector2D.new(0,0)
@@ -93,7 +86,6 @@ function Customer:update()
                 self:setState(2)
             end
         end
-        self.requestSpr:moveTo(self.sprite.x,self.sprite.y-32)
     end
 
     self.idleTime -= deltaTime
@@ -102,5 +94,4 @@ end
 
 function Customer:remove()
     self.sprite:remove()
-    self.requestSpr:remove()
 end

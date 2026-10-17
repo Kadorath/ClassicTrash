@@ -19,7 +19,14 @@
         "shape": [[0,0,0],[0,1,0],[0,0,0]],
         "center": [0.5,0.5],
         "value": 1,
-        "bagCount": 4
+        "bagCount": 3
+    },
+    "paperball": {
+        "img": "paperball",
+        "shape": [[0,0,0],[0,1,0],[0,0,0]],
+        "center": [0.5,0.5],
+        "value": 1,
+        "bagCount": 3
     },
     "fishbones": {
         "tags": ["wet"],

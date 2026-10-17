@@ -40,7 +40,7 @@ function storeGrid:drawCell(section, row, column, selected, x, y, width, height)
     for _,goal in pairs(goals) do
         local goalMap = goal.map
         if goalMap[ind] == 1 then
-            gfx.setDitherPattern(0.8, gfx.image.kDitherTypeDiagonalLine)
+            gfx.setDitherPattern(0.8, goal.ditherType)
             gfx.fillRect(x,y,width,height)
             
             gfx.setColor(gfx.kColorBlack)
@@ -76,30 +76,35 @@ function storeGrid:drawCell(section, row, column, selected, x, y, width, height)
     -- end
 end
 
+function CreateStoreGoal(size, t, minX, maxX, minY, maxY)
+    local newGoal = Request(size, minX, maxX, minY, maxY)
+    newGoal:setType(t)
+    return newGoal
+end
 function CreateRandomStoreGoal(size)
     local newGoal
     if size == nil then
         if (GetDifficultyLevel() >= 1 and math.random() < 0.25) then
-            newGoal = Request(3)
+            newGoal = CreateStoreGoal(3, bus.SampleRequestType())
             table.insert(goals, newGoal)
         else
             if (math.random() < 0.5) then
-                newGoal = Request(2, 1, 4, 1, 4)
+                newGoal = CreateStoreGoal(2, bus.SampleRequestType(), 1, 4, 1, 4)
                 table.insert(goals, newGoal)
             else
-                newGoal = Request(1, 1, 4, 1, 2)
+                newGoal = CreateStoreGoal(1, bus.SampleRequestType(), 1, 4, 1, 2)
                 table.insert(goals, newGoal)
-                newGoal = Request(1, 1, 4, 3, 4)
+                newGoal = CreateStoreGoal(1, bus.SampleRequestType(), 1, 4, 3, 4)
                 table.insert(goals, newGoal)
             end
 
             if (math.random() < 0.5) then
-                newGoal = Request(2, 5, 8, 1, 4)
+                newGoal = CreateStoreGoal(2, bus.SampleRequestType(), 5, 8, 1, 4)
                 table.insert(goals, newGoal)
             else
-                newGoal = Request(1, 5, 8, 1, 2)
+                newGoal = CreateStoreGoal(1, bus.SampleRequestType(), 5, 8, 1, 2)
                 table.insert(goals, newGoal)
-                newGoal = Request(1, 5, 8, 3, 4)
+                newGoal = CreateStoreGoal(1, bus.SampleRequestType(), 5, 8, 3, 4)
                 table.insert(goals, newGoal)
             end
         end
@@ -147,7 +152,7 @@ function CreateRandomStoreGoal(size)
             end
         end
         -- print("Largest square:", largestN, "bounds:", minX, maxX, minY, maxY)
-        newGoal = Request(math.min(size, largestN-1), minX, maxX, minY, maxY)
+        newGoal = CreateStoreGoal(math.min(size, largestN-1), bus.SampleRequestType(), minX, maxX, minY, maxY)
         table.insert(goals, newGoal)
     end
 
@@ -333,11 +338,14 @@ function store.DropIntoStore(trash, targetX, targetY)
     table.insert(fallingTrash, trash)
 end
 
+-- TODO: Given the trash heldOffsets, adjust how the trash is placed on the grid
 function store.PlaceTrash(trash, rot, r, c)
     local newTrash = true
     if r == nil and c == nil then
         _,r,c = storeGrid:getSelection()
     end
+    r -= trash.heldOffY
+    c -= trash.heldOffX
     local toChange, itemAlreadyThere = GetTrashPosOnGrid(trash, r, c)
     if toChange == nil then return false, nil end
 
@@ -383,6 +391,7 @@ function store.PlaceTrash(trash, rot, r, c)
     PrintStoreGrid()
 
     trash.storeRow, trash.storeCol = r, c
+    trash.heldOffX, trash.heldOffY = 0, 0
     return true, itemToSwap
 end
 
@@ -395,7 +404,7 @@ function PrintStoreGrid()
     print(debugStr)
 end
 
--- TAKES: a Trash, a row, a column, and some optional offsets
+-- TAKES: a Trash, a row, a column
 -- Checks the shape of the Trash at the given r and column
 -- against the current store grid.
 -- RETURNS: 
@@ -404,6 +413,8 @@ end
 -- itemAlreadyThere: one trash that it would intersect with, if any
 -- If given trash would intersect more than one other trash or
 -- has some part that is off the grid, toChange is nil
+-- TODO: I think offX and offY are not used anymore. I want to use them to let
+-- the player to hold the trash from any grid square
 function GetTrashPosOnGrid(trash, r, c, offX, offY)
     offX = offX or 0
     offY = offY or 0
@@ -411,8 +422,8 @@ function GetTrashPosOnGrid(trash, r, c, offX, offY)
     local h = storeGrid:getNumberOfRowsInSection(1)
     local cX = #trash.shape//2
     local cY = #trash.shape[1]//2
-    r += offY
-    c += offX
+    -- r += offY
+    -- c += offX
     r -= 1
 
     local itemAlreadyThere = nil
@@ -432,7 +443,7 @@ function GetTrashPosOnGrid(trash, r, c, offX, offY)
                         return nil, nil
                     end
                 -- If item is reserved for another falling item
-                elseif itemMap[newToChangeInd] < 0 and itemMap[newToChangeInd] ~= -trash.id then
+                elseif itemMap[newToChangeInd] < 0 and (trash.id == nil or itemMap[newToChangeInd] ~= -trash.id) then
                     -- return nil, nil
                 end
                 table.insert(toChange, newToChangeInd)
@@ -442,6 +453,10 @@ function GetTrashPosOnGrid(trash, r, c, offX, offY)
     return toChange, itemAlreadyThere
 end
 
+-- Looks at current storeGrid selection. If there is a trash there, returns
+-- that trash object, along with the adjustment of the center of the trash to the
+-- x and y position of the selection
+-- Otherwise returns nil
 function store.PickupTrash()
     local _,y,x = storeGrid:getSelection()
     local w = storeGrid:getNumberOfColumns()
@@ -450,7 +465,9 @@ function store.PickupTrash()
         for i,trash in ipairs(trashInStore) do
             if trash.id == queryID then
                 store.RemoveTrashFromStore(trash.id, i)
-                return trash
+                print("Picking up trash:", trash.id, trash.storeRow, trash.storeCol)
+                print("Pickup offset from center:", y-trash.storeRow, x-trash.storeCol)
+                return trash, y-trash.storeRow, x-trash.storeCol
             end
         end
     end

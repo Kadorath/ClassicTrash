@@ -14,6 +14,8 @@ import "scripts/thetruck"
 import "scripts/cashregister"
 import "scripts/cQueue"
 
+import "scripts/mainmenu"
+
 local gfx <const> = playdate.graphics
 local sfx <const> = playdate.sound
 -- Sound
@@ -59,33 +61,37 @@ bordersBG:setCenter(0,0)
 bordersBG:moveTo(0,0)
 bordersBG:setZIndex(RenderLayer.BORDERS)
 
-local startmenuBG = gfx.sprite.new(gfx.image.new("images/BGs/startmenuBG"))
-startmenuBG:setCenter(0,0)
-startmenuBG:moveTo(0,0)
-startmenuBG:setZIndex(-1)
-startmenuBG:add()
-
 deltaTime = 0
-
 gameState = 1
-
 gameTime = 0
 
+function OnAppOpen()
+    mainmenu.Open()
+end
+
 function GameStart()
+    mainmenu.Close()
+
+    -- Set gameplay state fields
+    gameState = 2
+    gameTime = 0
+    nextTrashID = 1
+
+    -- Init gameplay scripts
     cQueue.Init()
     bus.Init()
     store.Init()
     conveyor.Init()
     player.Init()
     cashregister.Init()
-    startmenuBG:remove()
+
+    -- Add gameplay sprites
     storeBG:add()
     beltBG:add()
     bordersBG:add()
     gridSpr:add()
-    gameState = 2
-    gameTime = 0
 
+    -- Begin playing gameplay sound
     landfillAmb:play(0)
     gameplayBGM:play(0)
 end
@@ -102,9 +108,7 @@ function playdate.update()
     gfx.sprite.update()
 
     if gameState == 1 then
-        if playdate.buttonJustPressed(playdate.kButtonA) then
-            GameStart()
-        end
+        mainmenu.update()
     elseif gameState == 2 then
         gameTime += deltaTime
         player.update()
@@ -146,3 +150,5 @@ function copy(obj, seen)
     for k, v in pairs(obj) do res[copy(k, s)] = copy(v, s) end
     return res
 end
+
+OnAppOpen()

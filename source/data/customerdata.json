@@ -1,8 +1,26 @@
 {
-    "rodent": {
-        "name": "Rodent",
+    "cat": {
+        "name": "Filthy Feline",
         "img": "Customer-Cat",
-        "wants":  ["boot", "bannanapeel", "fishbones", "umbrella", "tv"],
+        "wants":  "fishy",
+        "patience": 600
+    },
+    "dog": {
+        "name": "Mangy Mutt",
+        "img": "Customer-Dog",
+        "wants":  "",
+        "patience": 600
+    },
+    "bunny": {
+        "name": "Bnnuy",
+        "img": "Customer-Bunny",
+        "wants":  "",
+        "patience": 600
+    },
+    "squirrel": {
+        "name": "Fucked-up Squirrel",
+        "img": "Customer-Squirrel",
+        "wants":  "",
         "patience": 600
     }
 }
